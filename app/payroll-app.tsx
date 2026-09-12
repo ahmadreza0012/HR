@@ -340,10 +340,10 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
   };
   return (
     <main className="app-shell" aria-busy={loading || busy}>
-      {loading && (
+      {(loading || busy) && (
         <div className="api-loading" role="status" aria-live="polite">
           <span className="api-spinner" aria-hidden="true" />
-          <span>در حال دریافت اطلاعات...</span>
+          <span>{busy ? "در حال ذخیره‌سازی..." : "در حال دریافت اطلاعات..."}</span>
         </div>
       )}
       <aside className="sidebar">
