@@ -183,6 +183,74 @@ const navEnglish: Record<TabKey, string> = {
 };
 const navLabel = (key: TabKey, language: Language) =>
   language === "en" ? navEnglish[key] : nav.find((item) => item[0] === key)?.[2] ?? key;
+const englishUi: Record<string, string> = {
+  "سامانه محلی": "Local workspace",
+  "صبح بخیر، مدیر 👋": "Good morning, Administrator",
+  "اطلاعات این بخش در Google Sheets ذخیره می‌شود": "Changes in this section are stored in Google Sheets",
+  "Google Sheets متصل": "Google Sheets connected",
+  "Google Sheets قطع": "Google Sheets offline",
+  "ثبت حضور روزانه": "Add attendance",
+  "در حال دریافت اطلاعات...": "Loading data…",
+  "در حال ذخیره‌سازی...": "Saving…",
+  "تعطیلات هفتگی": "Weekly days off",
+  "ذخیره روزهای تعطیل": "Save days off",
+  "تقویم کاری": "Work calendar",
+  "برنامه‌های کاری": "Work schedules",
+  "انتخاب روز برای تعیین تعطیلی یا شیفت کاری": "Select a date to set a holiday or work schedule",
+  "شیفت، روزهای کاری و استراحت": "Shifts, workdays and breaks",
+  "شیفت جدید": "New shift",
+  "نام شیفت": "Shift name",
+  "شروع": "Start",
+  "پایان": "End",
+  "استراحت": "Break",
+  "ذخیره": "Save",
+  "ویرایش": "Edit",
+  "حذف": "Delete",
+  "پیش‌فرض": "Default",
+  "روز کاری": "Work day",
+  "تعطیلی ثبت‌شده": "Recorded holiday",
+  "تعطیل هفتگی": "Weekend",
+  "تنظیم روز تقویم": "Calendar day settings",
+  "ماه قبل": "Previous month",
+  "ماه بعد": "Next month",
+  "کارمند": "Employee",
+  "همه کارکنان": "All employees",
+  "وضعیت روز": "Day status",
+  "تعطیل": "Holiday",
+  "شیفت کاری": "Work shift",
+  "دلیل": "Reason",
+  "انصراف": "Cancel",
+  "حضور و غیاب روزانه": "Daily attendance",
+  "ثبت حضور": "Add attendance",
+  "تاریخ": "Date",
+  "ورود": "Clock in",
+  "خروج": "Clock out",
+  "نوع مرخصی": "Leave type",
+  "بدون مرخصی": "No leave",
+  "توضیحات": "Notes",
+  "محاسبه و ذخیره": "Calculate and save",
+  "کارمندان فعال": "Active employees",
+  "فرآیند حقوق": "Payroll status",
+  "بدون داده": "No data",
+  "آماده محاسبه": "Ready to calculate",
+  "مشاهده همه ←": "View all →",
+  "پردازش حقوق ماهانه": "Monthly payroll processing",
+  "محاسبه حقوق": "Calculate payroll",
+  "فیش‌های حقوق": "Payslips",
+  "گزارش‌ها و اکسل": "Reports & Excel",
+  "تاریخچه تغییرات": "Change history",
+  "تنظیمات": "Settings",
+  "دسترسی کامل": "Full access",
+  "پایگاه‌داده قطع است": "Data connection is unavailable",
+};
+const translateUiText = (value: string, language: Language) => {
+  if (language === "fa") return value;
+  return Object.entries(englishUi).reduce(
+    (translated, [persian, english]) => translated.replaceAll(persian, english),
+    value,
+  );
+};
+const originalUiText = new WeakMap<Text, string>();
 const tabRoutes: Record<TabKey, string> = {
   dashboard: "/",
   employees: "/employees",
@@ -411,6 +479,21 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     window.localStorage.setItem("kara-language", language);
     document.documentElement.lang = language === "en" ? "en-CA" : "fa";
     document.documentElement.dir = language === "en" ? "ltr" : "rtl";
+    const updateText = () => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node: Text | null;
+      while ((node = walker.nextNode() as Text | null)) {
+        const original = originalUiText.get(node) ?? node.data;
+        if (!original.trim()) continue;
+        originalUiText.set(node, original);
+        const translated = translateUiText(original, language);
+        if (node.data !== translated) node.data = translated;
+      }
+    };
+    const observer = new MutationObserver(updateText);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    updateText();
+    return () => observer.disconnect();
   }, [language]);
   const run = async (task: () => Promise<unknown>, message: string) => {
     setBusy(true);
