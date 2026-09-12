@@ -125,7 +125,7 @@ type Settings = {
 
 // In production the API is hosted separately from the Vercel frontend.
 // Keep the local API as the development fallback.
-const API = (import.meta.env.VITE_API_URL ?? "http://localhost:3001/api").replace(/\/$/, "");
+const API = (import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "/api" : "http://localhost:3001/api")).replace(/\/$/, "");
 const isSheetsApi = API.includes("script.google.com/macros/s/");
 const apiUrl = (path: string) => {
   if (!isSheetsApi) return `${API}${path}`;
