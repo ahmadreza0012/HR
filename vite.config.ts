@@ -33,7 +33,7 @@ const localBindingConfig = {
     : [],
 };
 
-export default defineConfig(async () => {
+export default defineConfig(async ({ command }) => {
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -41,19 +41,37 @@ export default defineConfig(async () => {
   process.env.MINIFLARE_REGISTRY_PATH ??= ".wrangler/registry";
 
   // Wrangler snapshots its log path while the Cloudflare plugin is imported.
-  const { cloudflare } = await import("@cloudflare/vite-plugin");
+  // Avoid importing it at all in dev: its local runtime can prevent Vinext
+  // from accepting connections on Windows.
+  const cloudflare =
+    command === "build"
+      ? (await import("@cloudflare/vite-plugin")).cloudflare
+      : undefined;
 
   return {
-    server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    server: {
+      // Vinext otherwise binds to IPv6 loopback on Windows, where its dev
+      // socket can appear open but time out. Bind explicitly to IPv4 instead.
+      host: "127.0.0.1",
+      ...(isCodexSeatbeltSandbox
+        ? { watch: { useFsEvents: false, usePolling: true } }
+        : {}),
+    },
     plugins: [
       vinext(),
-      sites(),
-      cloudflare({
-        viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
-        config: localBindingConfig,
-      }),
+      // The hosting integration is used by build tooling, not the local app.
+      ...(command === "build" ? [sites()] : []),
+      // The Cloudflare simulator is only needed for a production build. Loading
+      // it under Vinext's local RSC dev server can leave port 3000 unable to
+      // accept requests on Windows.
+      ...(command === "build" && cloudflare
+        ? [
+            cloudflare({
+              viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
+              config: localBindingConfig,
+            }),
+          ]
+        : []),
     ],
   };
 });

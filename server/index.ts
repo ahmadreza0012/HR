@@ -20,7 +20,27 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
-app.use(cors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000" }));
+// `localhost` and `127.0.0.1` are distinct browser origins.  Allow both for
+// local development; deployments can override this with a comma-separated
+// WEB_ORIGIN list.
+const webOrigins = (process.env.WEB_ORIGIN ??
+  "http://localhost:3000,http://127.0.0.1:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Browsers treat localhost and 127.0.0.1 as different origins. Keep
+      // both available for local development even when WEB_ORIGIN contains
+      // only one of them, while still rejecting unrelated origins.
+      const isLocalWebOrigin =
+        origin == null ||
+        /^https?:\/\/(localhost|127\.0\.0\.1):3000$/.test(origin);
+      callback(null, isLocalWebOrigin || webOrigins.includes(origin ?? ""));
+    },
+  }),
+);
 app.use(express.json({ limit: "2mb" }));
 
 const handler =

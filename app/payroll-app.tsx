@@ -123,7 +123,9 @@ type Settings = {
   globalValues: Record<string, number>;
 };
 
-const API = "http://localhost:3001/api";
+// In production the API is hosted separately from the Vercel frontend.
+// Keep the local API as the development fallback.
+const API = (import.meta.env.VITE_API_URL ?? "http://localhost:3001/api").replace(/\/$/, "");
 const nav = [
   ["dashboard", "⌂", "داشبورد"],
   ["employees", "♙", "کارمندان"],
