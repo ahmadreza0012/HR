@@ -280,6 +280,8 @@ const tabRoutes: Record<TabKey, string> = {
   audit: "/audit-log",
   settings: "/settings",
 };
+const tabForPath = (path: string): TabKey =>
+  ((Object.entries(tabRoutes) as [TabKey, string][]).find(([, route]) => route === path)?.[0] ?? "dashboard");
 const statusFa: Record<string, string> = {
   present: "حاضر",
   absent: "غایب",
@@ -483,9 +485,11 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     void Promise.resolve().then(load);
   }, [load]);
   useEffect(() => {
+    // Rewrites serve deep links through the root page, so restore the selected
+    // section from the browser URL after hydration.
+    setTab(tabForPath(window.location.pathname));
     const onPopState = () => {
-      const found = (Object.entries(tabRoutes) as [TabKey, string][]).find(([, route]) => route === window.location.pathname);
-      setTab(found?.[0] ?? "dashboard");
+      setTab(tabForPath(window.location.pathname));
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
