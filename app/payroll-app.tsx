@@ -277,35 +277,32 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
   };
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [e, a, m, f, p, c, l, s, slips] = await Promise.all([
-        request<Employee[]>("/employees"),
-        request<Attendance[]>(`/attendance?date=${selectedDate}`),
-        request<Monthly[]>(
-          `/monthly?year=${now.getFullYear()}&month=${now.getMonth() + 1}`,
-        ),
-        request<Formula[]>("/formulas"),
-        request<Period[]>("/payroll/periods"),
-        request<Config>("/schedules"),
-        request<Audit[]>("/audit"),
-        request<Settings>("/settings"),
-        request<Payslip[]>(`/payroll/results?year=${now.getFullYear()}&month=${now.getMonth() + 1}`),
-      ]);
-      setEmployees(e);
-      setAttendance(a);
-      setMonthly(m);
-      setFormulas(f);
-      setPeriods(p);
-      setConfig(c);
-      setAudits(l);
-      setSettings(s);
-      setPayslips(slips);
-      setOnline(true);
-    } catch {
-      setOnline(false);
-    } finally {
-      setLoading(false);
-    }
+    const results = await Promise.allSettled([
+      request<Employee[]>("/employees"),
+      request<Attendance[]>(`/attendance?date=${selectedDate}`),
+      request<Monthly[]>(`/monthly?year=${now.getFullYear()}&month=${now.getMonth() + 1}`),
+      request<Formula[]>("/formulas"),
+      request<Period[]>("/payroll/periods"),
+      request<Config>("/schedules"),
+      request<Audit[]>("/audit"),
+      request<Settings>("/settings"),
+      request<Payslip[]>(`/payroll/results?year=${now.getFullYear()}&month=${now.getMonth() + 1}`),
+    ]);
+    const value = <T,>(index: number): T | undefined => {
+      const result = results[index];
+      return result.status === "fulfilled" ? result.value as T : undefined;
+    };
+    const e = value<Employee[]>(0); if (e) setEmployees(e);
+    const a = value<Attendance[]>(1); if (a) setAttendance(a);
+    const m = value<Monthly[]>(2); if (m) setMonthly(m);
+    const f = value<Formula[]>(3); if (f) setFormulas(f);
+    const p = value<Period[]>(4); if (p) setPeriods(p);
+    const c = value<Config>(5); if (c) setConfig(c);
+    const l = value<Audit[]>(6); if (l) setAudits(l);
+    const s = value<Settings>(7); if (s) setSettings(s);
+    const slips = value<Payslip[]>(8); if (slips) setPayslips(slips);
+    setOnline(results.some((result) => result.status === "fulfilled"));
+    setLoading(false);
   }, [selectedDate]);
   useEffect(() => {
     void Promise.resolve().then(load);
