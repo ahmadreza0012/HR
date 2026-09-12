@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "rm -rf .vinext .next dist && npm run build",
+  "installCommand": "npm ci",
   "outputDirectory": "dist/client",
   "framework": null,
   "cleanUrls": true
