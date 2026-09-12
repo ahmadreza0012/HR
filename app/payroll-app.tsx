@@ -1104,6 +1104,7 @@ function CalendarPage({
   const [show, setShow] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
   const [showHoliday, setShowHoliday] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<Config["schedules"][number] | null>(null);
   const [weeklyOffDays, setWeeklyOffDays] = useState<number[] | null>(null);
   const [selectedDay, setSelectedDay] = useState<{
     value: string;
@@ -1204,8 +1205,8 @@ function CalendarPage({
     const f = new FormData(e.currentTarget);
     run(
       () =>
-        request("/schedules", {
-          method: "POST",
+        request(editingSchedule ? `/schedules/${editingSchedule.id}` : "/schedules", {
+          method: editingSchedule ? "PUT" : "POST",
           body: JSON.stringify({
             name: f.get("name"),
             startMinute: toMin(String(f.get("start"))),
@@ -1220,6 +1221,14 @@ function CalendarPage({
       "شیفت جدید ثبت شد",
     );
     setShow(false);
+    setEditingSchedule(null);
+  };
+  const removeSchedule = (schedule: Config["schedules"][number]) => {
+    if (!window.confirm(`حذف شیفت «${schedule.name}» انجام شود؟`)) return;
+    void run(
+      () => request(`/schedules/${schedule.id}`, { method: "DELETE", body: JSON.stringify({ reason: "حذف شیفت" }) }),
+      "شیفت حذف شد",
+    );
   };
   const saveWeeklyDays = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1337,27 +1346,27 @@ function CalendarPage({
           </form>
         )}
         {view === "rules" && show && (
-          <form className="inline-form" onSubmit={submit}>
+          <form className="inline-form" onSubmit={submit} key={editingSchedule?.id ?? "new-schedule"}>
             <Field label="نام شیفت" name="name" required />
             <Field
               label="شروع"
               name="start"
               type="time"
-              defaultValue="08:00"
+              defaultValue={editingSchedule ? min(editingSchedule.startMinute) : "08:00"}
               required
             />
             <Field
               label="پایان"
               name="end"
               type="time"
-              defaultValue="17:00"
+              defaultValue={editingSchedule ? min(editingSchedule.endMinute) : "17:00"}
               required
             />
             <Field
               label="استراحت"
               name="break"
               type="number"
-              defaultValue="60"
+              defaultValue={String(editingSchedule?.breakMinutes ?? 60)}
               required
             />
             <button disabled={busy} className="primary-button">
@@ -1376,6 +1385,10 @@ function CalendarPage({
                     {min(s.startMinute)} تا {min(s.endMinute)} •{" "}
                     {s.breakMinutes} دقیقه استراحت
                   </p>
+                </div>
+                <div className="card-actions">
+                  <button type="button" className="secondary-button compact" onClick={() => { setEditingSchedule(s); setShow(true); }}>ویرایش</button>
+                  <button type="button" className="danger-button compact" onClick={() => removeSchedule(s)}>حذف</button>
                 </div>
                 {s.isDefault && (
                   <span className="badge processing">پیش‌فرض</span>
