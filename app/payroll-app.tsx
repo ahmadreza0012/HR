@@ -320,6 +320,31 @@ const actionFa: Record<string, string> = {
 };
 const money = (n: number) =>
   new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(n || 0);
+const parseJsonValue = (value: unknown): unknown => {
+  if (typeof value !== "string") return value;
+  try { return JSON.parse(value); } catch { return value; }
+};
+const normalizePayslip = (raw: any): Payslip => {
+  const trace = parseJsonValue(raw.componentResults ?? raw.component_results ?? raw.formulaSnapshot ?? raw.formula_snapshot);
+  return {
+    ...raw,
+    id: String(raw.id ?? ""),
+    periodId: String(raw.periodId ?? raw.period_id ?? ""),
+    year: Number(raw.year ?? 0),
+    month: Number(raw.month ?? 0),
+    status: String(raw.status ?? raw.payrollStatus ?? raw.payroll_status ?? ""),
+    fullName: String(raw.fullName ?? raw.full_name ?? "کارمند"),
+    personnelCode: String(raw.personnelCode ?? raw.personnel_code ?? ""),
+    inputs: (parseJsonValue(raw.inputs) as Record<string, number>) ?? {},
+    componentResults: Array.isArray(trace)
+      ? trace
+      : Array.isArray((trace as any)?.trace) ? (trace as any).trace : [],
+    earnings: Number(raw.earnings ?? 0),
+    deductions: Number(raw.deductions ?? 0),
+    netPay: Number(raw.netPay ?? raw.net ?? raw.net_pay ?? 0),
+    calculatedAt: String(raw.calculatedAt ?? raw.calculated_at ?? ""),
+  };
+};
 const min = (n: number | null | undefined) =>
   n == null
     ? "—"
@@ -486,7 +511,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     if (tab === "settings")
       add(request<Settings>("/settings"), setSettings);
     if (tab === "payslips")
-      add(request<Payslip[]>(`/payroll/results?${monthQuery}`), setPayslips);
+      add(request<any[]>(`/payroll/results?${monthQuery}`).then((items) => items.map(normalizePayslip)), setPayslips);
 
     const results = await Promise.allSettled(jobs);
     setOnline(results.some((result) => result.status === "fulfilled"));
@@ -2159,7 +2184,7 @@ function PayslipsPage({ items }: { items: Payslip[] }) {
             <div className="dialog-head"><div><span className="eyebrow">فیش حقوق</span><h3 id="payslip-title">{selected.fullName}</h3></div><button className="dialog-close" aria-label="بستن" onClick={() => setSelected(null)}>×</button></div>
             <div className="pay-summary"><div><span>پرداخت</span><strong>{money(selected.earnings)}</strong></div><div><span>کسورات</span><strong>{money(selected.deductions)}</strong></div><div><span>خالص</span><strong>{money(selected.netPay)}</strong></div></div>
             <div className="formula-list preview-trace">
-              {selected.componentResults.map((result) => <article key={result.code}><span className={`kind-icon ${result.kind}`}>{result.kind === "deduction" ? "-" : "+"}</span><div><strong>{result.name}</strong><code>{result.expression}</code></div><span className="version">{money(result.value)}</span></article>)}
+              {selected.componentResults.length ? selected.componentResults.map((result) => <article key={result.code}><span className={`kind-icon ${result.kind}`}>{result.kind === "deduction" ? "-" : "+"}</span><div><strong>{result.name}</strong><code>{result.expression}</code></div><span className="version">{money(result.value)}</span></article>) : <p className="empty-state">جزئیات فرمول برای این فیش در دادهٔ ذخیره‌شده موجود نیست.</p>}
             </div>
           </div>
         </div>
