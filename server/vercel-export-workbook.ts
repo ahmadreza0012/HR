@@ -1,3 +1,4 @@
+// Invoked by the consolidated Vercel API handler.
 import ExcelJS from "exceljs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 

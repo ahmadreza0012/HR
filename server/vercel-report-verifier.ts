@@ -1,3 +1,4 @@
+// Invoked by the consolidated Vercel API handler.
 import type { IncomingMessage, ServerResponse } from "node:http";
 type Request = IncomingMessage & { body?: unknown; url?: string };
 type Response = ServerResponse & { status: (code: number) => Response; json: (value: unknown) => void };

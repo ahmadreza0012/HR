@@ -1,4 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import exportWorkbook from "../server/vercel-export-workbook";
+import generateReport from "../server/vercel-report-generator";
+import verifyReport from "../server/vercel-report-verifier";
 
 type VercelRequest = IncomingMessage & { url?: string; body?: unknown };
 type VercelResponse = ServerResponse & {
@@ -12,6 +15,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!scriptUrl) return res.status(500).json({ error: "GOOGLE_SCRIPT_URL is not configured" });
   const incoming = new URL(req.url ?? "/api", "http://vercel.internal");
   const path = incoming.searchParams.get("path") || incoming.pathname.replace(/^\/api\/?/, "");
+
+  // Keep custom binary/report endpoints within this one deployed Function.
+  // Every other endpoint is a transparent proxy to Apps Script.
+  if (path === "export" || path === "export.xlsx") return exportWorkbook(req, res);
+  if (path === "reports/generate") return generateReport(req, res);
+  if (path === "reports/verify") return verifyReport(req, res);
+
   const target = new URL(scriptUrl);
   target.searchParams.set("path", path);
   for (const [key, value] of incoming.searchParams) {
