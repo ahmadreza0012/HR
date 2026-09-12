@@ -10,6 +10,7 @@ type Employee = {
   startDate: string;
   endDate?: string | null;
   baseSalary: number;
+  duties?: string;
   customValues: Record<string, number>;
   customValueKinds?: Record<string, "earning" | "deduction">;
 };
@@ -280,6 +281,16 @@ const tabRoutes: Record<TabKey, string> = {
   audit: "/audit-log",
   settings: "/settings",
 };
+const defaultEmployeeDuties = (employee: Employee & Record<string, unknown>) => {
+  const role = String(employee.jobCode ?? "").toLowerCase();
+  if (role.includes("warehouse")) return "دریافت، چیدمان و کنترل موجودی کالا؛ ثبت مغایرت‌ها و رعایت ایمنی انبار.";
+  if (role.includes("team lead")) return "هماهنگی تیم عملیاتی، پیگیری برنامه روزانه، کنترل کیفیت و گزارش‌دهی به مدیر.";
+  if (role.includes("payroll")) return "ثبت و کنترل داده‌های حضور و غیاب، تهیه گزارش حقوق و حفظ محرمانگی اطلاعات کارکنان.";
+  if (role.includes("support")) return "پاسخ‌گویی به درخواست‌های پشتیبانی، ثبت و پیگیری تیکت‌ها و مستندسازی راهکارها.";
+  if (role.includes("account")) return "پیگیری مشتریان، به‌روزرسانی اطلاعات فروش و هماهنگی امور اجرایی حساب‌ها.";
+  if (role.includes("manager")) return "برنامه‌ریزی عملیات، نظارت بر عملکرد تیم، مدیریت منابع و ارائه گزارش مدیریتی.";
+  return `انجام وظایف محوله در واحد ${String(employee.department ?? "مربوطه")}، همکاری با تیم و ثبت گزارش کار.`;
+};
 const tabForPath = (path: string): TabKey =>
   ((Object.entries(tabRoutes) as [TabKey, string][]).find(([, route]) => route === path)?.[0] ?? "dashboard");
 const statusFa: Record<string, string> = {
@@ -459,7 +470,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     const monthQuery = `year=${now.getFullYear()}&month=${now.getMonth() + 1}`;
 
     if (["dashboard", "employees", "attendance", "calendar", "rules", "formula", "reports"].includes(tab))
-      add(request<Employee[]>("/employees"), setEmployees);
+      add(request<Employee[]>("/employees").then((records) => records.map((employee) => ({ ...employee, duties: employee.duties?.trim() || defaultEmployeeDuties(employee) }))), setEmployees);
     if (["dashboard", "attendance"].includes(tab))
       add(request<Attendance[]>(`/attendance?date=${selectedDate}`), setAttendance);
     if (["dashboard", "payroll"].includes(tab))
@@ -911,6 +922,7 @@ function EmployeesPage({
             startDate: f.get("start"),
             endDate: f.get("end") || null,
             baseSalary: Number(f.get("salary")),
+            duties: String(f.get("duties") ?? "").trim(),
             customValues: values,
             customValueKinds: customValueKinds(f.get("customValuesKinds")),
           }),
@@ -935,6 +947,7 @@ function EmployeesPage({
             fullName: data.get("name"),
             employmentStatus: data.get("status"),
             baseSalary: Number(data.get("salary")),
+            duties: String(data.get("duties") ?? "").trim(),
             startDate: data.get("start"),
             endDate: data.get("end") || null,
             customValues: values,
@@ -990,6 +1003,7 @@ function EmployeesPage({
             defaultValue="0"
             required
           />
+          <label><span>وظایف و شرح مسئولیت‌ها</span><textarea name="duties" rows={3} placeholder="شرح مسئولیت‌های اصلی این کارمند" required /></label>
           <CustomValuesEditor />
           <button disabled={busy} className="primary-button">
             ذخیره
@@ -1015,6 +1029,7 @@ function EmployeesPage({
             defaultValue={String(editing.baseSalary)}
             required
           />
+          <label><span>وظایف و شرح مسئولیت‌ها</span><textarea name="duties" rows={3} defaultValue={editing.duties ?? defaultEmployeeDuties(editing)} required /></label>
           <CustomValuesEditor initialValues={editing.customValues ?? {}} initialKinds={editing.customValueKinds ?? {}} />
           <button disabled={busy} className="primary-button">
             ذخیره تغییرات
@@ -1052,6 +1067,7 @@ function EmployeesPage({
               <th>وضعیت</th>
               <th>تاریخ شروع</th>
               <th>حقوق پایه</th>
+              <th>وظایف</th>
               <th>عملیات</th>
             </tr>
           </thead>
@@ -1074,6 +1090,7 @@ function EmployeesPage({
                 </td>
                 <td>{String(x.startDate).slice(0, 10)}</td>
                 <td>{money(x.baseSalary)}</td>
+                <td className="duties-cell">{x.duties ?? defaultEmployeeDuties(x)}</td>
                 <td>
                   <button className="link-button" onClick={() => setEditing(x)}>
                     ویرایش

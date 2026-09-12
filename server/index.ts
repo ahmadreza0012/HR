@@ -172,7 +172,7 @@ app.get(
   "/api/employees",
   handler(async (_req, res) => {
     const { rows } = await pool.query(
-      `SELECT id,personnel_code AS "personnelCode",full_name AS "fullName",employment_status AS "employmentStatus",to_char(start_date,'YYYY-MM-DD') AS "startDate",to_char(end_date,'YYYY-MM-DD') AS "endDate",base_salary::float8 AS "baseSalary",custom_values AS "customValues" FROM employees ORDER BY full_name`,
+      `SELECT id,personnel_code AS "personnelCode",full_name AS "fullName",employment_status AS "employmentStatus",to_char(start_date,'YYYY-MM-DD') AS "startDate",to_char(end_date,'YYYY-MM-DD') AS "endDate",base_salary::float8 AS "baseSalary",duties,custom_values AS "customValues" FROM employees ORDER BY full_name`,
     );
     res.json(rows.map((row) => {
       const custom = unpackCustomValues(row.customValues);
@@ -202,6 +202,7 @@ const employeeInput = z.object({
   startDate: z.string().min(10),
   endDate: z.string().nullable().optional(),
   baseSalary: z.coerce.number().nonnegative(),
+  duties: z.string().trim().min(2),
   customValues: z.record(z.string(), z.coerce.number()).default({}),
   customValueKinds: z.record(z.string(), z.enum(["earning", "deduction"])).default({}),
 });
@@ -214,7 +215,7 @@ app.post(
       async (c) =>
         (
           await c.query(
-            `INSERT INTO employees(personnel_code,full_name,employment_status,start_date,end_date,base_salary,custom_values) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+            `INSERT INTO employees(personnel_code,full_name,employment_status,start_date,end_date,base_salary,duties,custom_values) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
             [
               data.personnelCode,
               data.fullName,
@@ -222,6 +223,7 @@ app.post(
               data.startDate,
               data.endDate ?? null,
               data.baseSalary,
+              data.duties,
               { values: data.customValues, kinds: data.customValueKinds },
             ],
           )
@@ -239,7 +241,7 @@ app.put(
       async (c) =>
         (
           await c.query(
-            `UPDATE employees SET personnel_code=$1,full_name=$2,employment_status=$3,start_date=$4,end_date=$5,base_salary=$6,custom_values=$7,updated_at=now() WHERE id=$8 RETURNING *`,
+            `UPDATE employees SET personnel_code=$1,full_name=$2,employment_status=$3,start_date=$4,end_date=$5,base_salary=$6,duties=$7,custom_values=$8,updated_at=now() WHERE id=$9 RETURNING *`,
             [
               data.personnelCode,
               data.fullName,
@@ -247,6 +249,7 @@ app.put(
               data.startDate,
               data.endDate ?? null,
               data.baseSalary,
+              data.duties,
               { values: data.customValues, kinds: data.customValueKinds },
               req.params.id,
             ],
