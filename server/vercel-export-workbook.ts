@@ -1,5 +1,5 @@
 // Invoked by the consolidated Vercel API handler.
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 type Response = ServerResponse & { status: (code: number) => Response; json: (value: unknown) => void };
@@ -54,6 +54,7 @@ export default async function handler(_req: IncomingMessage, res: Response) {
       Promise.all(resources.map(([, resource]) => source(resource))),
       source("schedules"),
     ]);
+    const { default: ExcelJS } = await import("exceljs");
     const book = new ExcelJS.Workbook(); book.creator = "DASTRANJ"; book.created = new Date();
     const readme = book.addWorksheet("Export guide");
     readme.addRows([

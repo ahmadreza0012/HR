@@ -1,4 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import exportWorkbook from "../server/vercel-export-workbook";
+import generateReport from "../server/vercel-report-generator";
+import verifyReport from "../server/vercel-report-verifier";
 
 type VercelRequest = IncomingMessage & { url?: string; body?: unknown };
 type VercelResponse = ServerResponse & {
@@ -29,18 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Keep custom binary/report endpoints within this one deployed Function.
   // Every other endpoint is a transparent proxy to Apps Script.
-  if (path === "export" || path === "export.xlsx") {
-    const { default: exportWorkbook } = await import("../server/vercel-export-workbook");
-    return exportWorkbook(req, res);
-  }
-  if (path === "reports/generate") {
-    const { default: generateReport } = await import("../server/vercel-report-generator");
-    return generateReport(req, res);
-  }
-  if (path === "reports/verify") {
-    const { default: verifyReport } = await import("../server/vercel-report-verifier");
-    return verifyReport(req, res);
-  }
+  if (path === "export" || path === "export.xlsx") return exportWorkbook(req, res);
+  if (path === "reports/generate") return generateReport(req, res);
+  if (path === "reports/verify") return verifyReport(req, res);
   if (path === "monthly") {
     try {
       const [employees, attendance] = await Promise.all([
