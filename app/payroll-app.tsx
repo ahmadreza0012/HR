@@ -126,6 +126,14 @@ type Settings = {
 // In production the API is hosted separately from the Vercel frontend.
 // Keep the local API as the development fallback.
 const API = (import.meta.env.VITE_API_URL ?? "http://localhost:3001/api").replace(/\/$/, "");
+const isSheetsApi = API.includes("script.google.com/macros/s/");
+const apiUrl = (path: string) => {
+  if (!isSheetsApi) return `${API}${path}`;
+  const [pathname, search] = path.replace(/^\//, "").split("?", 2);
+  const params = new URLSearchParams(search ?? "");
+  params.set("path", pathname);
+  return `${API}?${params.toString()}`;
+};
 const nav = [
   ["dashboard", "⌂", "داشبورد"],
   ["employees", "♙", "کارمندان"],
@@ -208,13 +216,19 @@ const isoDate = (date: Date) => {
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
+  const sheetsRequest = isSheetsApi && options?.body != null;
+  const method = String(options?.method ?? "GET").toUpperCase();
+  const sheetsUrl = sheetsRequest && method !== "POST"
+    ? `${apiUrl(path)}&method=${encodeURIComponent(method)}`
+    : apiUrl(path);
+  const res = await fetch(sheetsUrl, {
     ...options,
+    method: sheetsRequest ? "POST" : options?.method,
     headers: {
-      "Content-Type": "application/json",
-      "x-session-id": "kara-local",
+      ...(sheetsRequest ? { "Content-Type": "text/plain;charset=utf-8" } : { "Content-Type": "application/json", "x-session-id": "kara-local" }),
       ...(options?.headers ?? {}),
     },
+    body: sheetsRequest && typeof options?.body === "string" ? options.body : options?.body,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
