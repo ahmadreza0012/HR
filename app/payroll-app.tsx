@@ -216,10 +216,14 @@ const englishUi: Record<string, string> = {
   "انتخاب روز برای تعیین تعطیلی یا شیفت کاری": "Select a date to set a holiday or work schedule",
   "شیفت، روزهای کاری و استراحت": "Shifts, workdays and breaks",
   "شیفت جدید": "New shift",
+  "شیفت عادی": "Standard shift",
+  "شیفت استاندارد انتاریو": "Ontario standard shift",
+  "شیفت بدون عنوان": "Untitled shift",
   "نام شیفت": "Shift name",
   "شروع": "Start",
   "پایان": "End",
   "استراحت": "Break",
+  "دقیقه استراحت": "minutes break",
   "ذخیره": "Save",
   "ویرایش": "Edit",
   "حذف": "Delete",
@@ -1651,7 +1655,7 @@ function CalendarPage({
               <article key={s.id}>
                 <span className="schedule-icon">◷</span>
                 <div>
-                  <strong>{s.name}</strong>
+                  <strong>{scheduleTitleFa(s.name)}</strong>
                   <p>
                     {min(s.startMinute)} تا {min(s.endMinute)} •{" "}
                     {s.breakMinutes} دقیقه استراحت
