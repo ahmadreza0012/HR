@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import monthlySummary from "../server/vercel-monthly-summary";
 
 type VercelRequest = IncomingMessage & { url?: string; body?: unknown };
 type VercelResponse = ServerResponse & {
@@ -27,6 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { default: verifyReport } = await import("../server/vercel-report-verifier");
     return verifyReport(req, res);
   }
+  if (path === "monthly") return monthlySummary(req, res, scriptUrl);
 
   const target = new URL(scriptUrl);
   target.searchParams.set("path", path);

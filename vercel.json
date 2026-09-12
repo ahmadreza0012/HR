@@ -3,5 +3,8 @@
   "installCommand": "npm ci",
   "outputDirectory": "dist/client",
   "framework": null,
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/favicon.ico", "destination": "/favicon.svg" }
+  ]
 }
