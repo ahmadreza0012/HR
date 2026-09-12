@@ -127,12 +127,39 @@ type Settings = {
 // Keep the local API as the development fallback.
 const API = (import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "/api" : "http://localhost:3001/api")).replace(/\/$/, "");
 const isSheetsApi = API.includes("script.google.com/macros/s/");
+const API_CACHE_PREFIX = "kara-payroll-api-cache:";
+const API_CACHE_TTL = 60_000;
 const apiUrl = (path: string) => {
   if (!isSheetsApi) return `${API}${path}`;
   const [pathname, search] = path.replace(/^\//, "").split("?", 2);
   const params = new URLSearchParams(search ?? "");
   params.set("path", pathname);
   return `${API}?${params.toString()}`;
+};
+const readApiCache = <T,>(path: string): T | undefined => {
+  try {
+    const raw = window.localStorage.getItem(`${API_CACHE_PREFIX}${API}${path}`);
+    if (!raw) return undefined;
+    const cached = JSON.parse(raw) as { expiresAt: number; value: T };
+    if (cached.expiresAt > Date.now()) return cached.value;
+    window.localStorage.removeItem(`${API_CACHE_PREFIX}${API}${path}`);
+  } catch { /* Cache is optional. */ }
+  return undefined;
+};
+const writeApiCache = <T,>(path: string, value: T) => {
+  try {
+    window.localStorage.setItem(
+      `${API_CACHE_PREFIX}${API}${path}`,
+      JSON.stringify({ expiresAt: Date.now() + API_CACHE_TTL, value }),
+    );
+  } catch { /* Storage can be unavailable or full. */ }
+};
+const clearApiCache = () => {
+  try {
+    Object.keys(window.localStorage)
+      .filter((key) => key.startsWith(API_CACHE_PREFIX))
+      .forEach((key) => window.localStorage.removeItem(key));
+  } catch { /* Cache is optional. */ }
 };
 const nav = [
   ["dashboard", "⌂", "داشبورد"],
@@ -218,6 +245,14 @@ const isoDate = (date: Date) => {
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const sheetsRequest = isSheetsApi && options?.body != null;
   const method = String(options?.method ?? "GET").toUpperCase();
+  const canUseCache = method === "GET";
+  if (canUseCache) {
+    const cached = readApiCache<T>(path);
+    if (cached !== undefined) return cached;
+  } else {
+    // A successful write must never be followed by a stale read after refresh.
+    clearApiCache();
+  }
   const sheetsUrl = sheetsRequest && method !== "POST"
     ? `${apiUrl(path)}&method=${encodeURIComponent(method)}`
     : apiUrl(path);
@@ -242,7 +277,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? "ارتباط با سرور ناموفق بود");
   }
-  return res.status === 204 ? (undefined as T) : res.json();
+  const value = res.status === 204 ? (undefined as T) : await res.json() as T;
+  if (canUseCache) writeApiCache(path, value);
+  return value;
 }
 
 export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }) {
@@ -277,33 +314,34 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
   };
   const load = useCallback(async () => {
     setLoading(true);
-    const results = await Promise.allSettled([
-      request<Employee[]>("/employees"),
-      request<Attendance[]>(`/attendance?date=${selectedDate}`),
-      request<Monthly[]>(`/monthly?year=${now.getFullYear()}&month=${now.getMonth() + 1}`),
-      request<Formula[]>("/formulas"),
-      request<Period[]>("/payroll/periods"),
-      request<Config>("/schedules"),
-      request<Audit[]>("/audit"),
-      request<Settings>("/settings"),
-      request<Payslip[]>(`/payroll/results?year=${now.getFullYear()}&month=${now.getMonth() + 1}`),
-    ]);
-    const value = <T,>(index: number): T | undefined => {
-      const result = results[index];
-      return result.status === "fulfilled" ? result.value as T : undefined;
-    };
-    const e = value<Employee[]>(0); if (e) setEmployees(e);
-    const a = value<Attendance[]>(1); if (a) setAttendance(a);
-    const m = value<Monthly[]>(2); if (m) setMonthly(m);
-    const f = value<Formula[]>(3); if (f) setFormulas(f);
-    const p = value<Period[]>(4); if (p) setPeriods(p);
-    const c = value<Config>(5); if (c) setConfig(c);
-    const l = value<Audit[]>(6); if (l) setAudits(l);
-    const s = value<Settings>(7); if (s) setSettings(s);
-    const slips = value<Payslip[]>(8); if (slips) setPayslips(slips);
+    const jobs: Promise<unknown>[] = [];
+    const add = <T,>(job: Promise<T>, apply: (value: T) => void) =>
+      jobs.push(job.then(apply));
+    const monthQuery = `year=${now.getFullYear()}&month=${now.getMonth() + 1}`;
+
+    if (["dashboard", "employees", "attendance", "calendar", "rules", "formula"].includes(tab))
+      add(request<Employee[]>("/employees"), setEmployees);
+    if (["dashboard", "attendance"].includes(tab))
+      add(request<Attendance[]>(`/attendance?date=${selectedDate}`), setAttendance);
+    if (["dashboard", "payroll"].includes(tab))
+      add(request<Monthly[]>(`/monthly?${monthQuery}`), setMonthly);
+    if (["payroll", "formula"].includes(tab))
+      add(request<Formula[]>("/formulas"), setFormulas);
+    if (tab === "payroll")
+      add(request<Period[]>("/payroll/periods"), setPeriods);
+    if (["attendance", "calendar", "rules"].includes(tab))
+      add(request<Config>("/schedules"), setConfig);
+    if (["dashboard", "audit"].includes(tab))
+      add(request<Audit[]>("/audit"), setAudits);
+    if (tab === "settings")
+      add(request<Settings>("/settings"), setSettings);
+    if (tab === "payslips")
+      add(request<Payslip[]>(`/payroll/results?${monthQuery}`), setPayslips);
+
+    const results = await Promise.allSettled(jobs);
     setOnline(results.some((result) => result.status === "fulfilled"));
     setLoading(false);
-  }, [selectedDate]);
+  }, [selectedDate, tab]);
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
