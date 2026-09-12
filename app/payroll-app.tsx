@@ -136,6 +136,7 @@ const apiUrl = (path: string) => {
   params.set("path", pathname);
   return `${API}?${params.toString()}`;
 };
+type Language = "fa" | "en";
 const readApiCache = <T,>(path: string): T | undefined => {
   try {
     const raw = window.localStorage.getItem(`${API_CACHE_PREFIX}${API}${path}`);
@@ -175,6 +176,13 @@ const nav = [
   ["settings", "⚙", "تنظیمات"],
 ] as const;
 type TabKey = (typeof nav)[number][0];
+const navEnglish: Record<TabKey, string> = {
+  dashboard: "Dashboard", employees: "Employees", attendance: "Attendance",
+  calendar: "Calendar & Shifts", rules: "Shifts & Leave", payroll: "Payroll",
+  payslips: "Payslips", formula: "Formulas", reports: "Reports", audit: "Audit log", settings: "Settings",
+};
+const navLabel = (key: TabKey, language: Language) =>
+  language === "en" ? navEnglish[key] : nav.find((item) => item[0] === key)?.[2] ?? key;
 const tabRoutes: Record<TabKey, string> = {
   dashboard: "/",
   employees: "/employees",
@@ -226,20 +234,63 @@ const toMin = (v: string) => {
 };
 const today = new Date().toISOString().slice(0, 10);
 const now = new Date();
-const weekDaysFa = [
-  "شنبه",
-  "یکشنبه",
-  "دوشنبه",
-  "سه‌شنبه",
-  "چهارشنبه",
-  "پنجشنبه",
-  "جمعه",
+const weekDaysCanada = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
 const isoDate = (date: Date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+};
+const addDays = (date: Date, amount: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+};
+const easterSunday = (year: number) => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month, day);
+};
+const nthWeekday = (year: number, month: number, weekday: number, nth: number) => {
+  const first = new Date(year, month, 1);
+  return new Date(year, month, 1 + ((weekday - first.getDay() + 7) % 7) + 7 * (nth - 1));
+};
+const canadaFederalHolidays = (year: number) => {
+  const victoriaDay = new Date(year, 4, 24);
+  while (victoriaDay.getDay() !== 1) victoriaDay.setDate(victoriaDay.getDate() - 1);
+  const easter = easterSunday(year);
+  return [
+    { date: isoDate(new Date(year, 0, 1)), title: "New Year's Day" },
+    { date: isoDate(addDays(easter, -2)), title: "Good Friday" },
+    { date: isoDate(victoriaDay), title: "Victoria Day" },
+    { date: isoDate(new Date(year, 6, 1)), title: "Canada Day" },
+    { date: isoDate(nthWeekday(year, 8, 1, 1)), title: "Labour Day" },
+    { date: isoDate(new Date(year, 8, 30)), title: "National Day for Truth and Reconciliation" },
+    { date: isoDate(nthWeekday(year, 9, 1, 2)), title: "Thanksgiving Day" },
+    { date: isoDate(new Date(year, 10, 11)), title: "Remembrance Day" },
+    { date: isoDate(new Date(year, 11, 25)), title: "Christmas Day" },
+    { date: isoDate(new Date(year, 11, 26)), title: "Boxing Day" },
+  ].map((event) => ({ ...event, id: `canada-${event.date}` }));
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -284,6 +335,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }) {
   const [tab, setTab] = useState<TabKey>(initialTab);
+  const [language, setLanguage] = useState<Language>(() =>
+    typeof window !== "undefined" && window.localStorage.getItem("kara-language") === "en" ? "en" : "fa",
+  );
   const [mobileMenu, setMobileMenu] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -353,6 +407,11 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+  useEffect(() => {
+    window.localStorage.setItem("kara-language", language);
+    document.documentElement.lang = language === "en" ? "en-CA" : "fa";
+    document.documentElement.dir = language === "en" ? "ltr" : "rtl";
+  }, [language]);
   const run = async (task: () => Promise<unknown>, message: string) => {
     setBusy(true);
     try {
@@ -382,7 +441,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     if (window.location.pathname !== tabRoutes[nextTab]) window.history.pushState({}, "", tabRoutes[nextTab]);
   };
   return (
-    <main className="app-shell" aria-busy={loading || busy}>
+    <main className="app-shell" dir={language === "en" ? "ltr" : "rtl"} aria-busy={loading || busy}>
       {(loading || busy) && (
         <div className="api-loading" role="status" aria-live="polite">
           <span className="api-spinner" aria-hidden="true" />
@@ -398,14 +457,14 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
           </div>
         </div>
         <nav aria-label="ناوبری اصلی">
-          {nav.map(([key, icon, label]) => (
+          {nav.map(([key, icon]) => (
             <button
               key={key}
               className={`nav-item ${tab === key ? "active" : ""}`}
               onClick={() => selectTab(key)}
             >
               <span>{icon}</span>
-              {label}
+              {navLabel(key, language)}
             </button>
           ))}
         </nav>
@@ -427,6 +486,8 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
             selectTab(tab === "employees" ? "employees" : "attendance")
           }
           online={online}
+          language={language}
+          onLanguageChange={() => setLanguage((current) => current === "fa" ? "en" : "fa")}
         />
         {tab === "dashboard" && (
           <Dashboard
@@ -478,9 +539,9 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
         )}
       </section>
       <nav className="mobile-tabbar" aria-label="ناوبری موبایل">
-        {nav.filter(([key]) => ["dashboard", "attendance", "payroll", "formula"].includes(key)).map(([key, icon, label]) => (
-          <button key={key} className={tab === key ? "active" : ""} onClick={() => selectTab(key)}>
-            <span>{icon}</span><small>{label}</small>
+            {nav.filter(([key]) => ["dashboard", "attendance", "payroll", "formula"].includes(key)).map(([key, icon]) => (
+              <button key={key} className={tab === key ? "active" : ""} onClick={() => selectTab(key)}>
+            <span>{icon}</span><small>{navLabel(key, language)}</small>
           </button>
         ))}
         <button className={mobileMenu ? "active" : ""} onClick={() => setMobileMenu((current) => !current)} aria-expanded={mobileMenu} aria-controls="mobile-more-menu">
@@ -493,8 +554,8 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
           <div className="mobile-sheet-handle" />
           <div className="mobile-sheet-head"><div><strong>بخش‌های بیشتر</strong><small>دسترسی سریع به همه امکانات</small></div><button aria-label="بستن" onClick={() => setMobileMenu(false)}>×</button></div>
           <div className="mobile-sheet-grid">
-            {nav.filter(([key]) => !["dashboard", "attendance", "payroll", "formula"].includes(key)).map(([key, icon, label]) => (
-              <button key={key} className={tab === key ? "active" : ""} onClick={() => selectTab(key)}><span>{icon}</span><small>{label}</small></button>
+            {nav.filter(([key]) => !["dashboard", "attendance", "payroll", "formula"].includes(key)).map(([key, icon]) => (
+              <button key={key} className={tab === key ? "active" : ""} onClick={() => selectTab(key)}><span>{icon}</span><small>{navLabel(key, language)}</small></button>
             ))}
           </div>
         </section>
@@ -512,22 +573,26 @@ function Header({
   tab,
   onPrimary,
   online,
+  language,
+  onLanguageChange,
 }: {
   tab: string;
   onPrimary: () => void;
   online: boolean | null;
+  language: Language;
+  onLanguageChange: () => void;
 }) {
-  const title = nav.find((x) => x[0] === tab)?.[2];
+  const title = navLabel(tab as TabKey, language);
   return (
     <header className="topbar">
       <div>
         <p className="eyebrow">
           سامانه محلی •{" "}
-          {new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(
+          {new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fa-IR", { dateStyle: "full" }).format(
             new Date(),
           )}
         </p>
-        <h1>{tab === "dashboard" ? "صبح بخیر، مدیر 👋" : title}</h1>
+        <h1>{tab === "dashboard" ? language === "en" ? "Good morning, Administrator" : "صبح بخیر، مدیر 👋" : title}</h1>
         <p>
           {tab === "dashboard"
             ? "خلاصه وضعیت نیروی انسانی و پردازش حقوق"
@@ -535,6 +600,9 @@ function Header({
         </p>
       </div>
       <div className="top-actions">
+        <button className="secondary-button compact" type="button" onClick={onLanguageChange} aria-label="Change language">
+          {language === "fa" ? "English" : "فارسی"}
+        </button>
         <span className={`connection ${online ? "connected" : "disconnected"}`}>
           {online ? "● Google Sheets متصل" : "● Google Sheets قطع"}
         </span>
@@ -1155,44 +1223,33 @@ function CalendarPage({
   const defaultSchedule =
     config.schedules.find((x) => x.isDefault) ?? config.schedules[0];
   const configuredWeeklyOffDays = useMemo(() => {
-    if (!defaultSchedule) return [5];
+    if (!defaultSchedule) return [0, 6];
     const configured = defaultSchedule.workDays ?? [];
-    const legacyWesternDefault =
-      configured.length === 5 &&
-      [1, 2, 3, 4, 5].every((value) => configured.includes(value));
-    const effectiveWorkDays = legacyWesternDefault
-      ? [0, 1, 2, 3, 4, 6]
-      : configured;
-    return [0, 1, 2, 3, 4, 5, 6].filter(
-      (day) => !effectiveWorkDays.includes(day),
-    );
+    return [0, 1, 2, 3, 4, 5, 6].filter((day) => !configured.includes(day));
   }, [defaultSchedule]);
   const selectedWeeklyOffDays = weeklyOffDays ?? configuredWeeklyOffDays;
   const calendarDays = useMemo(() => {
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
-    // Persian calendars start the week on Saturday; JavaScript starts it on Sunday.
-    const firstWeekday = (new Date(year, month, 1).getDay() + 1) % 7;
+    // Canadian calendars start the week on Sunday.
+    const firstWeekday = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
+    const statutoryHolidays = canadaFederalHolidays(year);
     return [
       ...Array.from({ length: firstWeekday }, () => null),
       ...Array.from({ length: totalDays }, (_, index) => {
         const date = new Date(year, month, index + 1);
         const value = isoDate(date);
-        const holiday = config.holidays.find(
+        const customHoliday = config.holidays.find(
           (x) => String(x.date).slice(0, 10) === value,
         );
+        const holiday = customHoliday ?? statutoryHolidays.find((x) => x.date === value);
         const override = (config.overrides ?? []).find(
           (x) => String(x.date).slice(0, 10) === value,
         );
         const configuredDays = defaultSchedule?.workDays ?? [];
         // Keep existing five-day defaults compatible with the Persian workweek (Sat–Thu).
-        const legacyWesternDefault =
-          configuredDays.length === 5 &&
-          [1, 2, 3, 4, 5].every((day) => configuredDays.includes(day));
-        const scheduleWorkday = legacyWesternDefault
-          ? date.getDay() !== 5
-          : configuredDays.includes(date.getDay());
+        const scheduleWorkday = configuredDays.includes(date.getDay());
         const isWorkday =
           weeklyOffDays !== null
             ? !selectedWeeklyOffDays.includes(date.getDay())
@@ -1208,7 +1265,7 @@ function CalendarPage({
     selectedWeeklyOffDays,
     weeklyOffDays,
   ]);
-  const monthLabel = new Intl.DateTimeFormat("fa-IR", {
+  const monthLabel = new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
     month: "long",
   }).format(calendarMonth);
@@ -1351,8 +1408,7 @@ function CalendarPage({
               </p>
             </div>
             <div className="weekday-checkboxes">
-              {weekDaysFa.map((day, index) => {
-                const jsDay = [6, 0, 1, 2, 3, 4, 5][index];
+              {weekDaysCanada.map((day, jsDay) => {
                 return (
                   <label key={day}>
                     <input
@@ -1470,17 +1526,9 @@ function CalendarPage({
               </button>
             </div>
             <div className="calendar-weekdays">
-              {weekDaysFa.map((day, index) => {
-                const jsDay = [6, 0, 1, 2, 3, 4, 5][index];
+              {weekDaysCanada.map((day, jsDay) => {
                 const configuredDays = defaultSchedule?.workDays ?? [];
-                const legacyWesternDefault =
-                  configuredDays.length === 5 &&
-                  [1, 2, 3, 4, 5].every((value) =>
-                    configuredDays.includes(value),
-                  );
-                const scheduleWorkday = legacyWesternDefault
-                  ? jsDay !== 5
-                  : configuredDays.includes(jsDay);
+                const scheduleWorkday = configuredDays.includes(jsDay);
                 const isWorkday =
                   weeklyOffDays !== null
                     ? !selectedWeeklyOffDays.includes(jsDay)
@@ -1535,7 +1583,7 @@ function CalendarPage({
                     <div className="calendar-day-number">
                       <strong>{item.date.getDate()}</strong>
                       <small>
-                        {item.date.toLocaleDateString("fa-IR", {
+                        {item.date.toLocaleDateString("en-CA", {
                           weekday: "short",
                         })}
                       </small>
@@ -1544,22 +1592,22 @@ function CalendarPage({
                       <span
                         className="calendar-event holiday-event"
                         aria-label="تعطیل"
-                      />
+                      >{item.holiday?.title ?? "Holiday"}</span>
                     ) : item.override?.scheduleName ? (
                       <span
                         className="calendar-event work-event"
                         aria-label="روز کاری"
-                      />
+                      >{item.override.scheduleName}</span>
                     ) : item.isWorkday ? (
                       <span
                         className="calendar-event work-event"
                         aria-label="روز کاری"
-                      />
+                      >Work day</span>
                     ) : (
                       <span
                         className="calendar-event weekend-event"
                         aria-label="تعطیل هفتگی"
-                      />
+                      >Weekend</span>
                     )}
                   </div>
                 ) : (
@@ -1598,7 +1646,7 @@ function CalendarPage({
                 <div>
                   <span className="eyebrow">تنظیم روز تقویم</span>
                   <h3 id="calendar-dialog-title">
-                    {new Intl.DateTimeFormat("fa-IR", {
+                    {new Intl.DateTimeFormat("en-CA", {
                       weekday: "long",
                       year: "numeric",
                       month: "long",
