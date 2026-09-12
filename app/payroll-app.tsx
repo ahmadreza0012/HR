@@ -127,8 +127,9 @@ type Settings = {
 // Keep the local API as the development fallback.
 const API = (import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "/api" : "http://localhost:3001/api")).replace(/\/$/, "");
 const isSheetsApi = API.includes("script.google.com/macros/s/");
+const isVercelProxy = API === "/api";
 const apiUrl = (path: string) => {
-  if (!isSheetsApi) return `${API}${path}`;
+  if (!isSheetsApi && !isVercelProxy) return `${API}${path}`;
   const [pathname, search] = path.replace(/^\//, "").split("?", 2);
   const params = new URLSearchParams(search ?? "");
   params.set("path", pathname);
@@ -216,7 +217,7 @@ const isoDate = (date: Date) => {
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const sheetsRequest = isSheetsApi && options?.body != null;
+  const sheetsRequest = (isSheetsApi || isVercelProxy) && options?.body != null;
   const method = String(options?.method ?? "GET").toUpperCase();
   const sheetsUrl = sheetsRequest && method !== "POST"
     ? `${apiUrl(path)}&method=${encodeURIComponent(method)}`
