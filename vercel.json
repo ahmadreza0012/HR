@@ -15,6 +15,14 @@
   "rewrites": [
     { "source": "/favicon.ico", "destination": "/favicon.svg" },
     { "source": "/api/export", "destination": "/Kara_Payroll_Operational.xlsx" },
-    { "source": "/api/export.xlsx", "destination": "/Kara_Payroll_Operational.xlsx" }
+    { "source": "/api/export.xlsx", "destination": "/Kara_Payroll_Operational.xlsx" },
+    {
+      "source": "/api/payroll/:rest*",
+      "destination": "/api/employees?path=payroll/:rest*"
+    },
+    {
+      "source": "/api/reports/:rest*",
+      "destination": "/api/employees?path=reports/:rest*"
+    }
   ]
 }
