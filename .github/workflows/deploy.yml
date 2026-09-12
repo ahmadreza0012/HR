@@ -36,8 +36,8 @@ jobs:
 
   deploy-web:
     name: Deploy frontend (Vercel)
-    needs: [verify, deploy-api]
-    if: ${{ always() && needs.verify.result == 'success' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped') }}
+    needs: verify
+    if: ${{ needs.verify.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
