@@ -129,6 +129,9 @@ const API = (import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "/api" : "h
 const isSheetsApi = API.includes("script.google.com/macros/s/");
 const API_CACHE_PREFIX = "kara-payroll-api-cache:";
 const API_CACHE_TTL = 60_000;
+// Google Apps Script has cold starts and can take longer than a local API.
+// Do not cancel a valid Sheets request at the previous 15-second threshold.
+const API_TIMEOUT_MS = 45_000;
 const apiUrl = (path: string) => {
   if (!isSheetsApi) return `${API}${path}`;
   const [pathname, search] = path.replace(/^\//, "").split("?", 2);
@@ -375,7 +378,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ? `${apiUrl(path)}&method=${encodeURIComponent(method)}`
     : apiUrl(path);
   const timeout = new AbortController();
-  const timer = window.setTimeout(() => timeout.abort(), 15000);
+  const timer = window.setTimeout(() => timeout.abort(), API_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(sheetsUrl, {
