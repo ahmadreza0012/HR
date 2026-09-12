@@ -263,6 +263,115 @@ const englishUi: Record<string, string> = {
   "تنظیمات": "Settings",
   "دسترسی کامل": "Full access",
   "پایگاه‌داده قطع است": "Data connection is unavailable",
+  "حاضر": "Present",
+  "غایب": "Absent",
+  "مرخصی": "Leave",
+  "ناقص": "Incomplete",
+  "بررسی نشده": "Not reviewed",
+  "ثبت‌شده": "Recorded",
+  "ثبت نشده": "Not recorded",
+  "ثبت شد": "Saved",
+  "دقیقه": "minutes",
+  "حقوق و دستمزد": "Payroll",
+  "مدیر سیستم": "System administrator",
+  "ناوبری اصلی": "Main navigation",
+  "ناوبری موبایل": "Mobile navigation",
+  "بیشتر": "More",
+  "بستن فهرست بیشتر": "Close more menu",
+  "بخش‌های بیشتر": "More sections",
+  "دسترسی سریع به همه امکانات": "Quick access to all features",
+  "خلاصه وضعیت نیروی انسانی و پردازش حقوق": "Workforce and payroll processing summary",
+  "● Google Sheets متصل": "● Google Sheets connected",
+  "● Google Sheets قطع": "● Google Sheets offline",
+  "پروفایل‌های فعال": "Active profiles",
+  "حضور روز انتخابی": "Attendance for selected day",
+  "رکورد ثبت‌شده": "recorded records",
+  "اضافه‌کاری ماه": "Monthly overtime",
+  "ساعت تجمیع‌شده": "Accumulated hours",
+  "آخرین وضعیت حضور": "Latest attendance status",
+  "داده زنده از Google Sheets": "Live data from Google Sheets",
+  "آمادگی دوره جاری": "Current period readiness",
+  "پیش‌نویس": "Draft",
+  "کسری کار ماه": "Monthly work deficit",
+  "نیازمند بررسی": "Needs review",
+  "مورد": "items",
+  "نسخه فرمول": "Formula version",
+  "قابل ردیابی": "Traceable",
+  "رفتن به پردازش حقوق": "Go to payroll processing",
+  "همه تغییرات ثبت و قابل پیگیری هستند": "All changes are recorded and traceable",
+  "آخرین تغییر": "Latest change",
+  "هنوز تغییری ثبت نشده است": "No changes recorded yet",
+  "مشاهده تاریخچه": "View history",
+  "پروفایل ثبت‌شده": "registered profiles",
+  "کارمند جدید": "New employee",
+  "کد پرسنلی": "Personnel code",
+  "نام و نام خانوادگی": "Full name",
+  "وضعیت استخدام": "Employment status",
+  "فعال": "Active",
+  "غیرفعال": "Inactive",
+  "تاریخ شروع": "Start date",
+  "تاریخ پایان (اختیاری)": "End date (optional)",
+  "حقوق پایه": "Base salary",
+  "وظایف و شرح مسئولیت‌ها": "Duties and responsibilities",
+  "شرح مسئولیت‌های اصلی این کارمند": "Main responsibilities for this employee",
+  "ذخیره تغییرات": "Save changes",
+  "حذف «": "Delete \"",
+  "قطعی است؛ دلیل آن را ثبت کنید.": " permanently; enter the reason.",
+  "دلیل حذف": "Deletion reason",
+  "ثبت حذف": "Confirm deletion",
+  "عملیات": "Actions",
+  "وظایف": "Duties",
+  "اصلاح": "Override",
+  "ورود، خروج و محاسبات خودکار": "Clock-in, clock-out and automatic calculations",
+  "استراحت (دقیقه)": "Break (minutes)",
+  "مرخصی (ساعت)": "Leave (hours)",
+  "اصلاح وضعیت": "Override status",
+  "وضعیت اصلاح‌شده": "Override status",
+  "ثبت اصلاح": "Save override",
+  "برای این تاریخ رکوردی وجود ندارد": "No records exist for this date",
+  "اصلاح دستی همراه با دلیل ثبت شد": "Manual override recorded with reason",
+  "شیفت روز ثبت شد": "Day shift saved",
+  "روز به‌عنوان تعطیل ثبت شد": "Day marked as a holiday",
+  "شیفت جدید ثبت شد": "New shift saved",
+  "حذف شیفت": "Delete shift",
+  "شیفت حذف شد": "Shift deleted",
+  "تعطیلات هفتگی ذخیره شد": "Weekly days off saved",
+  "نوع مرخصی ثبت شد": "Leave type saved",
+  "تعطیلی ثبت شد": "Holiday saved",
+  "ساعتی": "Hourly",
+  "روزانه": "Daily",
+  "با حقوق": "Paid",
+  "بدون حقوق": "Unpaid",
+  "روزهای تعطیل": "Holidays",
+  "روز تعریف‌شده": "defined days",
+  "عنوان تعطیلی": "Holiday title",
+  "بازه زمانی": "Date range",
+  "جزئیات": "Details",
+  "پرداخت": "Payment",
+  "پرداخت‌ها": "Payments",
+  "کسورات": "Deductions",
+  "خالص پرداختی": "Net pay",
+  "جزئیات فرمول برای این فیش در دادهٔ ذخیره‌شده موجود نیست.": "Formula details are not available in the stored data for this payslip.",
+  "عملیات ناموفق بود": "Operation failed",
+  "ارتباط با سرور ناموفق بود": "Server connection failed",
+  "اطلاعات کارمند و Audit Log بروزرسانی شد": "Employee information and audit log updated",
+  "کارمند حذف و سابقه آن ثبت شد": "Employee deleted and history recorded",
+  "کارمند با موفقیت ثبت شد": "Employee saved successfully",
+  "حضور روزانه محاسبه و ذخیره شد": "Daily attendance calculated and saved",
+  "بستن": "Close",
+  "کاری": "Work day",
+  "جمعه نیک": "Good Friday",
+  "روز ویکتوریا": "Victoria Day",
+  "روز کانادا": "Canada Day",
+  "روز کارگر": "Labour Day",
+  "روز خانواده": "Family Day",
+  "روز شکرگزاری": "Thanksgiving Day",
+  "روز سال نو": "New Year's Day",
+  "روز کریسمس": "Christmas Day",
+  "روز باکسینگ": "Boxing Day",
+  "مرخصی استحقاقی": "Annual leave",
+  "مرخصی استعلاجی": "Sick leave",
+  "مرخصی بدون حقوق": "Unpaid leave",
 };
 const translateUiText = (value: string, language: Language) => {
   if (language === "fa") return value;
@@ -285,8 +394,17 @@ const tabRoutes: Record<TabKey, string> = {
   audit: "/audit-log",
   settings: "/settings",
 };
-const defaultEmployeeDuties = (employee: Employee & Record<string, unknown>) => {
+const defaultEmployeeDuties = (employee: Employee & Record<string, unknown>, language: Language = "fa") => {
   const role = String(employee.jobCode ?? "").toLowerCase();
+  if (language === "en") {
+    if (role.includes("warehouse")) return "Receive, organize and control inventory; report discrepancies and follow warehouse safety procedures.";
+    if (role.includes("team lead")) return "Coordinate the operations team, follow the daily plan, control quality and report to management.";
+    if (role.includes("payroll")) return "Maintain attendance and payroll records, prepare payroll reports and protect employee confidentiality.";
+    if (role.includes("support")) return "Respond to support requests, track tickets and document solutions.";
+    if (role.includes("account")) return "Follow up with customers, update sales information and coordinate account operations.";
+    if (role.includes("manager")) return "Plan operations, supervise the team, manage resources and provide management reports.";
+    return `Complete assigned duties in the ${String(employee.department ?? "relevant")} department, collaborate with the team and record work.`;
+  }
   if (role.includes("warehouse")) return "دریافت، چیدمان و کنترل موجودی کالا؛ ثبت مغایرت‌ها و رعایت ایمنی انبار.";
   if (role.includes("team lead")) return "هماهنگی تیم عملیاتی، پیگیری برنامه روزانه، کنترل کیفیت و گزارش‌دهی به مدیر.";
   if (role.includes("payroll")) return "ثبت و کنترل داده‌های حضور و غیاب، تهیه گزارش حقوق و حفظ محرمانگی اطلاعات کارکنان.";
@@ -524,7 +642,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     const monthQuery = `year=${now.getFullYear()}&month=${now.getMonth() + 1}`;
 
     if (["dashboard", "employees", "attendance", "calendar", "rules", "formula", "reports"].includes(tab))
-      add(request<Employee[]>("/employees").then((records) => records.map((employee) => ({ ...employee, duties: employee.duties?.trim() || defaultEmployeeDuties(employee) }))), setEmployees);
+      add(request<Employee[]>("/employees").then((records) => records.map((employee) => ({ ...employee, duties: employee.duties?.trim() || defaultEmployeeDuties(employee, language) }))), setEmployees);
     if (["dashboard", "attendance"].includes(tab))
       add(request<Attendance[]>(`/attendance?date=${selectedDate}`), setAttendance);
     if (["dashboard", "payroll"].includes(tab))
@@ -545,7 +663,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     const results = await Promise.allSettled(jobs);
     setOnline(results.some((result) => result.status === "fulfilled"));
     setLoading(false);
-  }, [selectedDate, tab]);
+  }, [language, selectedDate, tab]);
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
@@ -668,7 +786,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
           />
         )}
         {tab === "employees" && (
-          <EmployeesPage items={employees} busy={busy} run={run} />
+          <EmployeesPage items={employees} busy={busy} run={run} language={language} />
         )}
         {tab === "attendance" && (
           <AttendancePage
@@ -931,10 +1049,12 @@ function EmployeesPage({
   items,
   busy,
   run,
+  language,
 }: {
   items: Employee[];
   busy: boolean;
   run: any;
+  language: Language;
 }) {
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
@@ -1083,7 +1203,7 @@ function EmployeesPage({
             defaultValue={String(editing.baseSalary)}
             required
           />
-          <label><span>وظایف و شرح مسئولیت‌ها</span><textarea name="duties" rows={3} defaultValue={editing.duties ?? defaultEmployeeDuties(editing)} required /></label>
+          <label><span>وظایف و شرح مسئولیت‌ها</span><textarea name="duties" rows={3} defaultValue={editing.duties ?? defaultEmployeeDuties(editing, language)} required /></label>
           <CustomValuesEditor initialValues={editing.customValues ?? {}} initialKinds={editing.customValueKinds ?? {}} />
           <button disabled={busy} className="primary-button">
             ذخیره تغییرات
@@ -1144,7 +1264,7 @@ function EmployeesPage({
                 </td>
                 <td>{String(x.startDate).slice(0, 10)}</td>
                 <td>{money(x.baseSalary)}</td>
-                <td className="duties-cell">{x.duties ?? defaultEmployeeDuties(x)}</td>
+                <td className="duties-cell">{x.duties ?? defaultEmployeeDuties(x, language)}</td>
                 <td>
                   <button className="link-button" onClick={() => setEditing(x)}>
                     ویرایش
