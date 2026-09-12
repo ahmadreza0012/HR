@@ -5,6 +5,10 @@
   "framework": null,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/favicon.ico", "destination": "/favicon.svg" }
+    { "source": "/favicon.ico", "destination": "/favicon.svg" },
+    {
+      "source": "/api/:first/:rest*",
+      "destination": "/api/employees?path=:first/:rest*"
+    }
   ]
 }
