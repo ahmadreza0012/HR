@@ -2418,6 +2418,12 @@ function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: bo
   const [rangeStart, setRangeStart] = useState("2026-04-01");
   const [rangeEnd, setRangeEnd] = useState("2026-09-30");
   const [reportMessage, setReportMessage] = useState("");
+  const seedDemo = async () => {
+    const response = await fetch(`${API}/admin/seed-demo`, { method: "POST" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.error) throw new Error(result.error ?? "Demo seed failed");
+    setReportMessage(`Demo data created. Batch: ${result.batchId}`);
+  };
   const generate = async (type: string) => {
     if (!employeeId) throw new Error("Select an employee first");
     const response = await fetch(`${API}/reports/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ employeeId, start: rangeStart, end: rangeEnd, type }) });
@@ -2449,6 +2455,7 @@ function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: bo
           <label>Employee<select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}><option value="">Select employee</option>{employees.map((employee) => <option value={employee.id} key={employee.id}>{employee.fullName} ({employee.personnelCode})</option>)}</select></label>
           <div className="form-row"><label>From<input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} /></label><label>To<input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} /></label></div>
           <p>Timezone: <b>America/Toronto</b>. Overlapping pay periods are included; unavailable source fields remain “Not Available in System”.</p>
+          <button className="primary-button" disabled={busy} onClick={() => run(seedDemo, "Demo Ontario data created")}>Create demo data (six fictional employees)</button>
           <div className="action-row">
             {[['detailed-xlsx','01 Time Excel'],['detailed-pdf','01 Time PDF'],['period-xlsx','02 Period Excel'],['statement-pdf','03 Earnings PDF'],['monthly-xlsx','04 Monthly Excel'],['cover-pdf','05 Cover PDF']].map(([type,label]) => <button key={type} className="secondary-button" disabled={busy || !employeeId} onClick={() => run(() => generate(type), "Report issued and registered")}>{label}</button>)}
           </div>
