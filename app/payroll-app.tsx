@@ -2468,16 +2468,17 @@ function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: bo
     return json;
   };
   return (
-    <div className="report-grid">
+    <div className="report-grid report-workbench">
       <PagePanel title="IRCC-style read-only reports" subtitle="A separate package is produced for exactly one employee. Demo records are always labelled and must not be used for IRCC.">
-        <div className="upload-box">
+        <div className="upload-box report-controls">
           <label>Employee<select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}><option value="">Select employee</option>{employees.map((employee) => <option value={employee.id} key={employee.id}>{employee.fullName} ({employee.personnelCode})</option>)}</select></label>
           <div className="form-row"><label>From<input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} /></label><label>To<input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} /></label></div>
           <p>Timezone: <b>America/Toronto</b>. Overlapping pay periods are included; unavailable source fields remain “Not Available in System”.</p>
           <p className="import-result success">Demo data is maintained directly in Google Sheets. Do not run the automated seed again.</p>
-          <div className="action-row">
-            {[['detailed-xlsx','01 Time Excel'],['detailed-pdf','01 Time PDF'],['period-xlsx','02 Period Excel'],['statement-pdf','03 Earnings PDF'],['monthly-xlsx','04 Monthly Excel'],['cover-pdf','05 Cover PDF']].map(([type,label]) => <button key={type} className="secondary-button" disabled={busy || !employeeId} onClick={() => run(() => generate(type), "Report issued and registered")}>{label}</button>)}
+          <div className="report-actions">
+            {[['detailed-xlsx','01','Detailed time · Excel'],['detailed-pdf','01','Detailed time · PDF'],['period-xlsx','02','Pay-period hours · Excel'],['statement-pdf','03','Statement of earnings · PDF'],['monthly-xlsx','04','Monthly summary · Excel'],['cover-pdf','05','Data source certification · PDF']].map(([type,number,label]) => <button key={type} type="button" className="report-action" disabled={busy || !employeeId} onClick={() => run(() => generate(type), "Report issued and registered")}><span>{number}</span><strong>{label}</strong><small>{type.endsWith("pdf") ? "PDF" : "XLSX"}</small></button>)}
           </div>
+          {!employeeId && <p className="report-hint" role="status">Select an employee to enable all report outputs.</p>}
           {reportMessage && <p className="import-result success">{reportMessage}</p>}
           <p><a href="/verify">Verify a report by its report ID and SHA-256 hash</a></p>
         </div>
@@ -2486,7 +2487,7 @@ function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: bo
         title="خروجی جامع Excel"
         subtitle="داده‌ها، فیش‌ها، فرمول‌ها و Audit Log"
       >
-        <div className="export-card">
+        <div className="export-card complete-export">
           <span>XL</span>
           <h3>فایل کامل حقوق و دستمزد</h3>
           <p>تمام شیت‌ها راست‌چین و آماده مشاهده در Excel هستند.</p>
