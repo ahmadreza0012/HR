@@ -1213,11 +1213,11 @@ function AttendancePage({
           <button type="button" className="secondary-button compact" onClick={() => setOverride(null)}>انصراف</button>
         </form>
       )}
-      <AttendanceTable rows={items} onOverride={setOverride} />
+      <AttendanceTable rows={items} employees={employees} onOverride={setOverride} />
     </PagePanel>
   );
 }
-function AttendanceTable({ rows, onOverride }: { rows: Attendance[]; onOverride?: (row: Attendance) => void }) {
+function AttendanceTable({ rows, employees, onOverride }: { rows: Attendance[]; employees: Employee[]; onOverride?: (row: Attendance) => void }) {
   return (
     <div className="table-wrap">
       <table>
@@ -1236,23 +1236,29 @@ function AttendanceTable({ rows, onOverride }: { rows: Attendance[]; onOverride?
         <tbody>
           {rows.length ? (
             rows.map((x) => {
-              const s = x.override_status ?? x.computed_status;
+              // Google Sheets returns camelCase while the legacy local API used snake_case.
+              // Keep the table compatible with both sources during the migration.
+              const record = x as Attendance & Record<string, any>;
+              const employee = employees.find((item) => item.id === (record.employee_id ?? record.employeeId));
+              const fullName = record.fullName ?? employee?.fullName ?? "Unknown employee";
+              const personnelCode = record.personnelCode ?? employee?.personnelCode ?? "Not Available in System";
+              const s = record.override_status ?? record.overrideStatus ?? record.computed_status ?? record.computedStatus ?? "pending";
               return (
                 <tr key={x.id}>
                   <td>
                     <div className="person">
-                      <span>{x.fullName[0]}</span>
+                      <span>{fullName[0] ?? "?"}</span>
                       <div>
-                        <strong>{x.fullName}</strong>
-                        <small>{x.personnelCode}</small>
+                        <strong>{fullName}</strong>
+                        <small>{personnelCode}</small>
                       </div>
                     </div>
                   </td>
-                  <td>{min(x.check_in_minute)}</td>
-                  <td>{min(x.check_out_minute)}</td>
-                  <td>{min(x.actual_minutes)}</td>
-                  <td>{min(x.deficit_minutes)}</td>
-                  <td>{min(x.overtime_minutes)}</td>
+                  <td>{min(record.check_in_minute ?? record.checkInMinute)}</td>
+                  <td>{min(record.check_out_minute ?? record.checkOutMinute)}</td>
+                  <td>{min(record.actual_minutes ?? record.actualMinutes)}</td>
+                  <td>{min(record.deficit_minutes ?? record.deficitMinutes)}</td>
+                  <td>{min(record.overtime_minutes ?? record.overtimeMinutes)}</td>
                   <td>
                     <span className={`badge ${s}`}>{statusFa[s] ?? s}</span>
                   </td>
