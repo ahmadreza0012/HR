@@ -1,106 +1,43 @@
-/**
- * Kara Sheets API
- * Deploy as a Web app (Execute as: Me, Who has access: Anyone with the link).
- * Set SPREADSHEET_ID in Script Properties, or leave the value below.
- */
+/** DASTRANJ Google Sheets API — operational records and separate demo data. */
 const SPREADSHEET_ID = '13nxumXBEzX2ASRAPOULwVKblDd4hVywF2pTnpSuAOAQ';
-const TAB_BY_RESOURCE = {
-  employees: 'employees', attendance: 'attendance', schedules: 'work_schedules',
-  'leave-types': 'leave_types', holidays: 'holidays', 'schedule-overrides': 'schedule_overrides',
-  formulas: 'formula_components', 'payroll/periods': 'payroll_periods',
-  'payroll/results': 'payroll_results', audit: 'audit_log', settings: 'general_settings',
+const REPORT_TIMEZONE = 'America/Toronto';
+const DEMO = 'DEMO / SIMULATED DATA — NOT FOR IRCC';
+const TAB = {employees:'employees',attendance:'attendance',schedules:'work_schedules',holidays:'holidays','leave-types':'leave_types','schedule-overrides':'schedule_overrides',formulas:'formula_components','payroll/periods':'payroll_periods','payroll/results':'payroll_results',audit:'audit_log',settings:'general_settings','report-registry':'report_registry'};
+const SCHEMA = {
+ employees:['id','personnelCode','fullName','employmentStatus','startDate','endDate','baseSalary','customValues','customValueKinds','createdAt','updatedAt','dataClassification','province','department','jobCode','costCentre','hourlyRate','employmentType','taxProfile','isDemo'],
+ attendance:['id','employeeId','workDate','checkInMinute','checkOutMinute','breakMinutes','leaveTypeId','leaveMinutes','actualMinutes','requiredMinutes','delayMinutes','earlyLeaveMinutes','deficitMinutes','overtimeMinutes','computedStatus','overrideStatus','overrideReason','notes','createdAt','updatedAt','recordSource','recordStatus','approvedBy','approvedAt','department','jobCode','costCentre','paidLeaveMinutes','unpaidLeaveMinutes','isDemo'],
+ work_schedules:['id','name','startMinute','endMinute','breakMinutes','workDays','isDefault','createdAt','updatedAt','dataClassification','isDemo'],
+ holidays:['id','date','title','province','isStatutory','createdAt','updatedAt','isDemo'],
+ payroll_periods:['id','year','month','status','lockedAt','lockedBy','createdAt','updatedAt','periodStart','periodEnd','paymentDate','payPeriodId','payrollStatus','ruleVersion','dataClassification','isDemo'],
+ payroll_results:['id','periodId','employeeId','earnings','deductions','gross','net','formulaSnapshot','createdAt','updatedAt','year','month','regularHours','overtimeHours','paidLeaveHours','unpaidAbsenceHours','vacationPay','cpp','cpp2','ei','federalTax','ontarioTax','ontarioHealthPremium','paymentDate','transactionNumber','payrollStatus','adjustmentNote','isDemo'],
+ audit_log:['id','tableName','rowId','operation','actorId','reason','sessionId','batchId','beforeData','afterData','createdAt','dataClassification'],
+ report_registry:['id','reportNumber','employeeId','employeeName','rangeStart','rangeEnd','timezone','reportType','fileName','fileUrl','pdfHash','payloadHash','issuedAt','issuerName','validityStatus','isDemo','snapshot','batchId']
 };
+function b_(){return SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID')||SPREADSHEET_ID)}
+function out_(x){return ContentService.createTextOutput(JSON.stringify(x==null?{}:x)).setMimeType(ContentService.MimeType.JSON)}
+function now_(){return new Date().toISOString()} function id_(){return Utilities.getUuid()} function n_(x){x=Number(x);return isFinite(x)?x:0} function money_(x){return Math.round(n_(x)*100)/100}
+function route_(e){return String((e.parameter&&(e.parameter.path||e.parameter.route))||e.pathInfo||'').replace(/^\/+|\/+$/g,'').replace(/^api\//,'')}
+function body_(e){try{return JSON.parse((e.postData&&e.postData.contents)||'{}')}catch(_){return {}}}
+function parse_(x){if(typeof x!=='string')return x;try{return /^[{\[]/.test(x)?JSON.parse(x):x}catch(_){return x}}
+function cell_(x){return x==null?'':typeof x==='object'?JSON.stringify(x):x}
+function sheet_(resource){const name=TAB[resource]||resource, book=b_();let s=book.getSheetByName(name);if(!s)s=book.insertSheet(name);let h=s.getLastColumn()?s.getRange(1,1,1,s.getLastColumn()).getValues()[0].map(String):[];const need=SCHEMA[name]||['id','createdAt','updatedAt'];if(!h.length||!h.some(Boolean)){s.getRange(1,1,1,need.length).setValues([need]);h=need}else{const extra=need.filter(x=>h.indexOf(x)<0);if(extra.length)s.getRange(1,h.length+1,1,extra.length).setValues([extra])}return s}
+function rows_(resource){const s=sheet_(resource),h=s.getRange(1,1,1,s.getLastColumn()).getValues()[0].map(String);if(s.getLastRow()<2)return [];return s.getRange(2,1,s.getLastRow()-1,h.length).getValues().filter(r=>r.some(x=>x!=='')) .map(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]===''?null:parse_(r[i]));return o})}
+function audit_(table,row,op,before,after,actor,reason,batch){const a={id:id_(),tableName:table,rowId:String(row),operation:op,actorId:actor||'system',reason:reason||'',sessionId:'apps-script',batchId:batch||'',beforeData:before||null,afterData:after||null,createdAt:now_(),dataClassification:after&&after.isDemo?'demo':'operational'};write_('audit',a,false)}
+function write_(resource,item,log){const s=sheet_(resource),h=s.getRange(1,1,1,s.getLastColumn()).getValues()[0].map(String), all=rows_(resource),ix=all.findIndex(x=>String(x.id)===String(item.id)),before=ix<0?null:all[ix],data=h.map(k=>cell_(item[k]));if(ix<0)s.getRange(s.getLastRow()+1,1,1,h.length).setValues([data]);else s.getRange(ix+2,1,1,h.length).setValues([data]);if(log!==false)audit_(resource,item.id,ix<0?'INSERT':'UPDATE',before,item,'system','API write',log&&log.batchId);return item}
+function save_(resource,item,log){const o=Object.assign({},item);o.id=o.id||id_();o.createdAt=o.createdAt||now_();o.updatedAt=now_();return write_(resource,o,log)}
+function del_(resource,itemId){const s=sheet_(resource),all=rows_(resource),ix=all.findIndex(x=>String(x.id)===String(itemId));if(ix<0)return {ok:true,missing:true};const old=all[ix];if(old.isDemo===true||old.isDemo==='true'){old.recordStatus='voided';old.updatedAt=now_();write_(resource,old,{batchId:'void-'+id_()})}else{s.deleteRow(ix+2);audit_(resource,itemId,'DELETE',old,null,'system','API delete')}return {ok:true}}
+function sha_(x){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(x),Utilities.Charset.UTF_8).map(x=>('0'+(x&255).toString(16)).slice(-2)).join('')}
 
-function book_() {
-  return SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || SPREADSHEET_ID);
-}
-function out_(value) {
-  return ContentService.createTextOutput(JSON.stringify(value == null ? {} : value)).setMimeType(ContentService.MimeType.JSON);
-}
-function json_(e) {
-  const raw = e && e.postData && e.postData.contents ? e.postData.contents : '{}';
-  try { return JSON.parse(raw); } catch (_) { return {}; }
-}
-function route_(e) {
-  return String((e && e.parameter && (e.parameter.path || e.parameter.route)) || (e && e.pathInfo) || '')
-    .replace(/^\/+|\/+$/g, '').replace(/^api\//, '');
-}
-function tab_(resource) {
-  const name = TAB_BY_RESOURCE[resource] || resource;
-  return book_().getSheetByName(name);
-}
-function rows_(resource) {
-  const sheet = tab_(resource);
-  if (!sheet || sheet.getLastRow() < 1) return [];
-  const values = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
-  const headers = values.shift().map(String);
-  return values.filter(row => row.some(v => v !== '')).map(row => {
-    const item = {};
-    headers.forEach((h, i) => { item[h] = row[i] === '' ? null : parse_(row[i]); });
-    return item;
-  });
-}
-function parse_(value) {
-  if (typeof value !== 'string') return value;
-  if ((value[0] === '{' && value[value.length - 1] === '}') || (value[0] === '[' && value[value.length - 1] === ']')) {
-    try { return JSON.parse(value); } catch (_) {}
-  }
-  return value;
-}
-function write_(resource, item) {
-  const sheet = tab_(resource);
-  if (!sheet) throw new Error('Unknown sheet: ' + resource);
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-  const data = rows_(resource);
-  const index = data.findIndex(row => String(row.id) === String(item.id));
-  const values = headers.map(header => {
-    const value = item[header];
-    return value == null ? '' : (typeof value === 'object' ? JSON.stringify(value) : value);
-  });
-  if (index >= 0) sheet.getRange(index + 2, 1, 1, headers.length).setValues([values]);
-  else sheet.getRange(sheet.getLastRow() + 1, 1, 1, headers.length).setValues([values]);
-  return item;
-}
-function normalize_(resource, item) {
-  const now = new Date().toISOString();
-  const result = Object.assign({}, item);
-  result.id = result.id || Utilities.getUuid();
-  if (!result.createdAt) result.createdAt = now;
-  result.updatedAt = now;
-  return result;
-}
-function get_(e) {
-  const route = route_(e);
-  const parts = route.split('/');
-  const resource = parts[0] + (parts[0] === 'payroll' && parts[1] ? '/' + parts[1] : '');
-  const id = parts[0] === 'payroll' ? parts[2] : parts[1];
-  if (resource === 'health') return { ok: true, database: 'google-sheets' };
-  if (resource === 'schedules') return {
-    schedules: rows_('schedules'), holidays: rows_('holidays'), leaveTypes: rows_('leave-types'), overrides: rows_('schedule-overrides'),
-  };
-  if (resource === 'monthly') return rows_('attendance');
-  let result = rows_(resource);
-  if (resource === 'attendance' && e.parameter.date) result = result.filter(row => String(row.workDate).slice(0, 10) === e.parameter.date);
-  if (resource === 'payroll/results' && e.parameter.year && e.parameter.month) result = result.filter(row => String(row.year) === e.parameter.year && String(row.month) === e.parameter.month);
-  if (id) result = result.find(row => String(row.id) === String(id)) || null;
-  return result;
-}
-function post_(e) {
-  const route = route_(e);
-  const parts = route.split('/');
-  const resource = parts[0] + (parts[0] === 'payroll' && parts[1] ? '/' + parts[1] : '');
-  const body = json_(e);
-  if (String(e.parameter.method || '').toUpperCase() === 'DELETE') {
-    const sheet = tab_(parts[0]);
-    const rows = rows_(parts[0]);
-    const index = rows.findIndex(row => String(row.id) === String(parts[1]));
-    if (sheet && index >= 0) sheet.deleteRow(index + 2);
-    return { ok: true };
-  }
-  if (resource === 'payroll/process') return { ok: true, message: 'Payroll processing is queued.' };
-  if (resource === 'payroll' && (parts[2] === 'lock' || parts[2] === 'reopen')) return write_('payroll/periods', normalize_('payroll/periods', Object.assign({}, body, { id: parts[1], status: parts[2] === 'lock' ? 'locked' : 'open' })));
-  const target = TAB_BY_RESOURCE[resource] ? resource : parts[0];
-  return write_(target, normalize_(target, body));
-}
-function doGet(e) { try { return out_(get_(e)); } catch (error) { return out_({ error: String(error.message || error) }); } }
-function doPost(e) { try { return out_(post_(e)); } catch (error) { return out_({ error: String(error.message || error) }); } }
+// This calculator is intentionally for labelled demo data. Its complete assumptions are retained in formulaSnapshot.
+function tax_(hours,ot,rate,paid,version){const regular=money_(hours*rate),overtime=money_(ot*rate*1.5),leave=money_(paid*rate),vacation=money_((regular+overtime+leave)*.04),gross=money_(regular+overtime+leave+vacation),annual=gross*12,cpp=money_(Math.max(0,gross-291.67)*.0595),cpp2=money_(Math.max(0,annual-71300)/12*.04),ei=money_(gross*.0163),fed=money_(bracket_(annual,[58523,117045,181440,258482],[.14,.205,.26,.29,.33])/12),on=money_(bracket_(annual,[52886,105775,150000,220000],[.0505,.0915,.1116,.1216,.1316])/12),ohp=money_(annual>20000?Math.min(900,(annual-20000)*.06)/12:0),ded=money_(cpp+cpp2+ei+fed+on+ohp);return {regular,overtime,paidLeave:leave,vacationPay:vacation,gross,cpp,cpp2,ei,federalTax:fed,ontarioTax:on,ontarioHealthPremium:ohp,deductions:ded,net:money_(gross-ded),formulaSnapshot:{ruleVersion:version,classification:'DEMO / SIMULATED — illustrative only; not a CRA remittance calculation',assumptions:'TD1/TD1ON claim code 1, CPP/EI eligible, no benefits or other deductions, vacation pay 4%',timezone:REPORT_TIMEZONE}}}
+function bracket_(annual,limits,rates){let last=0,total=0;for(let i=0;i<rates.length;i++){const cap=limits[i]||annual;total+=Math.max(0,Math.min(annual,cap)-last)*rates[i];last=cap;if(annual<=cap)break}return total}
+function demoPeople_(){return [['ONT-DEMO-001','Ava Thompson',18.25,'Operations','Warehouse Associate','ONT-OPS'],['ONT-DEMO-002','Noah Patel',22.75,'Operations','Team Lead','ONT-OPS'],['ONT-DEMO-003','Olivia Martin',26.5,'Administration','Payroll Clerk','ONT-ADM'],['ONT-DEMO-004','Liam Chen',31.25,'Technology','Support Specialist','ONT-TEC'],['ONT-DEMO-005','Emma Wilson',36.75,'Sales','Account Coordinator','ONT-SLS'],['ONT-DEMO-006','Ethan Brown',44.5,'Management','Operations Manager','ONT-MGT']]}
+function holidayMap_(){return {'2026-04-03':'Good Friday','2026-05-18':'Victoria Day','2026-07-01':'Canada Day','2026-09-07':'Labour Day'}}
+function seedDemo_(){const batch='demo-seed-2026-'+id_(), hol=holidayMap_();if(!rows_('schedules').some(x=>x.id==='ontario-demo-standard'))save_('schedules',{id:'ontario-demo-standard',name:'Ontario demo standard — Mon–Fri 08:00–17:00; Sat 08:00–14:00',startMinute:480,endMinute:1020,breakMinutes:60,workDays:[1,2,3,4,5,6],isDefault:true,dataClassification:'demo',isDemo:true},{batchId:batch});Object.keys(hol).forEach(d=>{if(!rows_('holidays').some(x=>String(x.date).slice(0,10)===d))save_('holidays',{id:'on-'+d,date:d,title:hol[d],province:'Ontario',isStatutory:true,isDemo:true},{batchId:batch})});let ec=0,ac=0,pc=0,rc=0;demoPeople_().forEach((p,index)=>{let e=rows_('employees').find(x=>x.personnelCode===p[0]);if(!e){e=save_('employees',{personnelCode:p[0],fullName:p[1],employmentStatus:'active',startDate:'2026-04-01',baseSalary:money_(p[2]*173.33),customValues:{hourlyRate:p[2]},customValueKinds:{hourlyRate:'earning'},dataClassification:'demo',province:'Ontario',department:p[3],jobCode:p[4],costCentre:p[5],hourlyRate:p[2],employmentType:'full-time',taxProfile:'TD1 / TD1ON Claim Code 1',isDemo:true},{batchId:batch});ec++}const seen={};rows_('attendance').filter(x=>String(x.employeeId)===String(e.id)).forEach(x=>seen[String(x.workDate).slice(0,10)]=true);for(let m=3;m<=8;m++)for(let day=1;day<=new Date(2026,m+1,0).getDate();day++){const d=Utilities.formatString('2026-%02d-%02d',m+1,day);if(seen[d])continue;const dow=new Date(d+'T12:00:00').getDay(),stat=hol[d],req=(dow>=1&&dow<=5&&!stat)?480:(dow===6?300:0);let actual=req,paid=0,unpaid=0,cin=req?480:null,cout=req?(dow===6?840:1020):null,status='approved';if(req&&day===8&&index%2===0){paid=req;actual=0;cin=cout=null}if(req&&day===16&&index%3===0){unpaid=req;actual=0;cin=cout=null}if(req&&day===23){cin+=15;actual-=15;status='edited'}if(req&&dow===6&&day===11){cout+=60;actual+=60}save_('attendance',{employeeId:e.id,workDate:d,checkInMinute:cin,checkOutMinute:cout,breakMinutes:req?60:0,leaveTypeId:paid?'annual-paid-leave':unpaid?'unpaid-leave':'',leaveMinutes:paid+unpaid,actualMinutes:actual,requiredMinutes:req,delayMinutes:cin?Math.max(0,cin-480):0,earlyLeaveMinutes:0,deficitMinutes:Math.max(0,req-actual-paid),overtimeMinutes:Math.max(0,actual-req),computedStatus:status,notes:stat?'Ontario public holiday':dow===0?'Sunday weekend':paid?'Approved paid leave':unpaid?'Approved unpaid absence':'',recordSource:'seed-generator',recordStatus:status,approvedBy:'Hamideh Zeinali',approvedAt:now_(),department:p[3],jobCode:p[4],costCentre:p[5],paidLeaveMinutes:paid,unpaidLeaveMinutes:unpaid,isDemo:true},{batchId:batch});ac++}});for(let m=4;m<=9;m++){let p=rows_('payroll/periods').find(x=>Number(x.year)===2026&&Number(x.month)===m&&(x.isDemo===true||x.isDemo==='true'));if(!p){p=save_('payroll/periods',{year:2026,month:m,status:'locked',lockedAt:now_(),lockedBy:'Hamideh Zeinali',periodStart:Utilities.formatString('2026-%02d-01',m),periodEnd:Utilities.formatString('2026-%02d-%02d',m,new Date(2026,m,0).getDate()),paymentDate:Utilities.formatString('2026-%02d-05',m+1),payPeriodId:'ON-2026-'+Utilities.formatString('%02d',m),payrollStatus:'processed',ruleVersion:m<=6?'ON-2026-Q2':'ON-2026-Q3',dataClassification:'demo',isDemo:true},{batchId:batch});pc++}demoPeople_().forEach(x=>{const e=rows_('employees').find(y=>y.personnelCode===x[0]);if(rows_('payroll/results').some(y=>String(y.periodId)===String(p.id)&&String(y.employeeId)===String(e.id)))return;const a=rows_('attendance').filter(y=>String(y.employeeId)===String(e.id)&&String(y.workDate).slice(0,7)===Utilities.formatString('2026-%02d',m));let regular=0,paid=0,unpaid=0,ot=0;a.forEach(y=>{regular+=Math.min(n_(y.actualMinutes),n_(y.requiredMinutes))/60;paid+=n_(y.paidLeaveMinutes)/60;unpaid+=n_(y.unpaidLeaveMinutes)/60;ot+=n_(y.overtimeMinutes)/60});const c=tax_(regular,ot,x[2],paid,p.ruleVersion);save_('payroll/results',{periodId:p.id,employeeId:e.id,earnings:money_(c.gross),deductions:c.deductions,gross:c.gross,net:c.net,formulaSnapshot:c.formulaSnapshot,year:2026,month:m,regularHours:money_(regular),overtimeHours:money_(ot),paidLeaveHours:money_(paid),unpaidAbsenceHours:money_(unpaid),vacationPay:c.vacationPay,cpp:c.cpp,cpp2:c.cpp2,ei:c.ei,federalTax:c.federalTax,ontarioTax:c.ontarioTax,ontarioHealthPremium:c.ontarioHealthPremium,paymentDate:p.paymentDate,transactionNumber:'DEMO-ON-'+m+'-'+x[0].slice(-3),payrollStatus:'processed',adjustmentNote:'',isDemo:true},{batchId:batch});rc++})}audit_('demo_seed',batch,'SEED',null,{employees:ec,attendance:ac,periods:pc,payroll:rc,label:DEMO},'Hamideh Zeinali','Created fictional Ontario test data',batch);return {ok:true,batchId:batch,created:{employees:ec,attendance:ac,periods:pc,payroll:rc},notice:DEMO}}
+function snapshot_(employeeId,start,end){const employee=rows_('employees').find(x=>String(x.id)===String(employeeId));if(!employee)throw new Error('Employee not found');const attendance=rows_('attendance').filter(x=>String(x.employeeId)===String(employeeId)&&String(x.workDate).slice(0,10)>=start&&String(x.workDate).slice(0,10)<=end),periods=rows_('payroll/periods').filter(x=>String(x.periodStart).slice(0,10)<=end&&String(x.periodEnd).slice(0,10)>=start),results=rows_('payroll/results').filter(x=>String(x.employeeId)===String(employeeId)&&periods.some(p=>String(p.id)===String(x.periodId)));const monthly={};results.forEach(x=>{const k=x.year+'-'+('0'+x.month).slice(-2),z=monthly[k]||(monthly[k]={month:k,regularHours:0,overtimeHours:0,paidLeaveHours:0,unpaidAbsenceHours:0,gross:0,cpp:0,cpp2:0,ei:0,federalTax:0,ontarioTax:0,net:0,payPeriods:0});['regularHours','overtimeHours','paidLeaveHours','unpaidAbsenceHours','gross','cpp','cpp2','ei','federalTax','ontarioTax','net'].forEach(k2=>z[k2]+=n_(x[k2]));z.payPeriods++});return {employee,range:{start,end,timezone:REPORT_TIMEZONE},classification:employee.isDemo?DEMO:'SYSTEM DATA EXPORT — READ ONLY',attendance,payPeriods:periods,results,monthly:Object.keys(monthly).sort().map(k=>monthly[k]),unavailable:'Not Available in System',issuer:{name:'Hamideh Zeinali',role:'Business owner / employer'}}}
+function register_(x){const report=save_('report-registry',{id:x.id||id_(),reportNumber:x.reportNumber||('RPT-'+Date.now()),employeeId:x.employeeId,employeeName:x.employeeName,rangeStart:x.rangeStart,rangeEnd:x.rangeEnd,timezone:REPORT_TIMEZONE,reportType:x.reportType,fileName:x.fileName,fileUrl:x.fileUrl||'',pdfHash:x.pdfHash||'',payloadHash:x.payloadHash||'',issuedAt:x.issuedAt||now_(),issuerName:'Hamideh Zeinali',validityStatus:'Valid',isDemo:x.isDemo===true||x.isDemo==='true',snapshot:x.snapshot||{},batchId:x.batchId||id_()},{batchId:x.batchId});audit_('report_registry',report.id,'REPORT_ISSUED',null,report,'Hamideh Zeinali','Read-only report snapshot issued',report.batchId);return report}
+function verify_(reportId,hash){const r=rows_('report-registry').find(x=>String(x.id)===String(reportId)||String(x.reportNumber)===String(reportId));if(!r)return {status:'Unknown',message:'Report ID is not in the registry'};if(!r.pdfHash)return {status:'Missing',report:r,message:'No PDF hash was registered'};return {status:String(hash||'').toLowerCase()===String(r.pdfHash).toLowerCase()?'Valid':'Altered',report:r}}
+function get_(e){const r=route_(e),p=r.split('/'),resource=p[0]+(p[0]==='payroll'&&p[1]?'/'+p[1]:''),itemId=p[0]==='payroll'?p[2]:p[1];if(r==='health')return {ok:true,database:'google-sheets',timezone:REPORT_TIMEZONE};if(r==='reports/snapshot')return snapshot_(e.parameter.employeeId,e.parameter.start,e.parameter.end);if(r.indexOf('reports/verify/')===0)return verify_(p[2],e.parameter.hash);if(resource==='schedules')return {schedules:rows_('schedules'),holidays:rows_('holidays'),leaveTypes:rows_('leave-types'),overrides:rows_('schedule-overrides')};if(resource==='monthly')return rows_('attendance');let v=rows_(resource);if(resource==='attendance'&&e.parameter.date)v=v.filter(x=>String(x.workDate).slice(0,10)===e.parameter.date);if(resource==='payroll/results'&&e.parameter.year&&e.parameter.month)v=v.filter(x=>String(x.year)===String(e.parameter.year)&&String(x.month)===String(e.parameter.month));return itemId?(v.find(x=>String(x.id)===String(itemId))||null):v}
+function post_(e){const r=route_(e),p=r.split('/'),x=body_(e),method=String(e.parameter.method||'POST').toUpperCase(),resource=p[0]+(p[0]==='payroll'&&p[1]?'/'+p[1]:''),itemId=p[0]==='payroll'?p[2]:p[1];if(r==='admin/seed-demo')return seedDemo_();if(r==='reports/register')return register_(x);if(r==='reports/verify')return verify_(x.reportId,x.hash);if(method==='DELETE')return del_(p[0],itemId);if(resource==='payroll/process')return {ok:false,error:'Automatic processing of non-demo payroll is disabled.'};const target=TAB[resource]?resource:p[0];return save_(target,x,{})}
+function doGet(e){try{return out_(get_(e))}catch(error){return out_({error:String(error.message||error)})}}
+function doPost(e){try{return out_(post_(e))}catch(error){return out_({error:String(error.message||error)})}}

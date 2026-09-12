@@ -440,7 +440,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
       jobs.push(job.then(apply));
     const monthQuery = `year=${now.getFullYear()}&month=${now.getMonth() + 1}`;
 
-    if (["dashboard", "employees", "attendance", "calendar", "rules", "formula"].includes(tab))
+    if (["dashboard", "employees", "attendance", "calendar", "rules", "formula", "reports"].includes(tab))
       add(request<Employee[]>("/employees"), setEmployees);
     if (["dashboard", "attendance"].includes(tab))
       add(request<Attendance[]>(`/attendance?date=${selectedDate}`), setAttendance);
@@ -614,7 +614,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
         {tab === "formula" && (
           <FormulaPage items={formulas} employees={employees} busy={busy} run={run} />
         )}
-        {tab === "reports" && <ReportsPage busy={busy} run={run} />}
+        {tab === "reports" && <ReportsPage employees={employees} busy={busy} run={run} />}
         {tab === "audit" && <AuditPage items={audits} />}
         {tab === "settings" && (
           <SettingsPage settings={settings} busy={busy} run={run} />
@@ -2411,9 +2411,23 @@ function FormulaPage({
   );
 }
 
-function ReportsPage({ busy, run }: { busy: boolean; run: any }) {
+function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: boolean; run: any }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<any>(null);
+  const [employeeId, setEmployeeId] = useState("");
+  const [rangeStart, setRangeStart] = useState("2026-04-01");
+  const [rangeEnd, setRangeEnd] = useState("2026-09-30");
+  const [reportMessage, setReportMessage] = useState("");
+  const generate = async (type: string) => {
+    if (!employeeId) throw new Error("Select an employee first");
+    const response = await fetch(`${API}/reports/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ employeeId, start: rangeStart, end: rangeEnd, type }) });
+    if (!response.ok) { const failure = await response.json().catch(() => ({})); throw new Error(failure.error ?? "Report generation failed"); }
+    const reportId = response.headers.get("X-Report-Id");
+    const disposition = response.headers.get("Content-Disposition") ?? "";
+    const name = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? `report-${reportId}`;
+    const link = document.createElement("a"); link.href = URL.createObjectURL(await response.blob()); link.download = name; link.click(); URL.revokeObjectURL(link.href);
+    setReportMessage(`Issued ${name}. Verification ID: ${reportId}`);
+  };
   const upload = async (mode: "preview" | "commit") => {
     if (!file) throw new Error("ابتدا فایل را انتخاب کنید");
     const body = new FormData();
@@ -2430,6 +2444,18 @@ function ReportsPage({ busy, run }: { busy: boolean; run: any }) {
   };
   return (
     <div className="report-grid">
+      <PagePanel title="IRCC-style read-only reports" subtitle="A separate package is produced for exactly one employee. Demo records are always labelled and must not be used for IRCC.">
+        <div className="upload-box">
+          <label>Employee<select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}><option value="">Select employee</option>{employees.map((employee) => <option value={employee.id} key={employee.id}>{employee.fullName} ({employee.personnelCode})</option>)}</select></label>
+          <div className="form-row"><label>From<input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} /></label><label>To<input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} /></label></div>
+          <p>Timezone: <b>America/Toronto</b>. Overlapping pay periods are included; unavailable source fields remain “Not Available in System”.</p>
+          <div className="action-row">
+            {[['detailed-xlsx','01 Time Excel'],['detailed-pdf','01 Time PDF'],['period-xlsx','02 Period Excel'],['statement-pdf','03 Earnings PDF'],['monthly-xlsx','04 Monthly Excel'],['cover-pdf','05 Cover PDF']].map(([type,label]) => <button key={type} className="secondary-button" disabled={busy || !employeeId} onClick={() => run(() => generate(type), "Report issued and registered")}>{label}</button>)}
+          </div>
+          {reportMessage && <p className="import-result success">{reportMessage}</p>}
+          <p><a href="/verify">Verify a report by its report ID and SHA-256 hash</a></p>
+        </div>
+      </PagePanel>
       <PagePanel
         title="خروجی جامع Excel"
         subtitle="داده‌ها، فیش‌ها، فرمول‌ها و Audit Log"
