@@ -1,6 +1,5 @@
 // Invoked by the consolidated Vercel API handler.
 import crypto from "node:crypto";
-import ExcelJS from "exceljs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 type Request = IncomingMessage & { body?: unknown; url?: string };
@@ -50,6 +49,7 @@ function tabularRows(snapshot: any, type: ReportType) {
   return snapshot.monthly;
 }
 async function workbook(snapshot: any, type: ReportType) {
+  const { default: ExcelJS } = await import("exceljs");
   const book = new ExcelJS.Workbook(); const sheet = book.addWorksheet("DASTRANJ export");
   sheet.addRow([snapshot.classification]); sheet.addRow([`Timezone: ${snapshot.range.timezone}`]); sheet.addRow([`Employee: ${snapshot.employee.fullName} (${snapshot.employee.personnelCode})`]); sheet.addRow([]);
   const rows = tabularRows(snapshot, type); const keys = Object.keys(rows[0] ?? { status: unavailable }); sheet.addRow(keys);
