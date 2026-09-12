@@ -60,7 +60,7 @@ type Formula = {
   expression: unknown;
 };
 type Audit = {
-  id: number;
+  id: string | number;
   occurredAt: string;
   actorId: string;
   action: string;
@@ -139,6 +139,19 @@ const apiUrl = (path: string) => {
   params.set("path", pathname);
   return `${API}?${params.toString()}`;
 };
+const normalizeAudit = (value: any): Audit => ({
+  id: value.id ?? crypto.randomUUID(),
+  occurredAt: value.occurredAt ?? value.createdAt ?? new Date(0).toISOString(),
+  actorId: value.actorId ?? "system",
+  action: value.action ?? value.operation ?? "UNKNOWN",
+  entityType: value.entityType ?? value.tableName ?? "system",
+  entityId: value.entityId ?? value.rowId ?? "",
+  reason: value.reason ?? null,
+  beforeValue: value.beforeValue ?? value.beforeData ?? null,
+  afterValue: value.afterValue ?? value.afterData ?? null,
+  sessionId: value.sessionId ?? "",
+  batchId: value.batchId ?? null,
+});
 type Language = "fa" | "en";
 const readApiCache = <T,>(path: string): T | undefined => {
   try {
@@ -456,7 +469,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     if (["attendance", "calendar", "rules"].includes(tab))
       add(request<Config>("/schedules"), setConfig);
     if (["dashboard", "audit"].includes(tab))
-      add(request<Audit[]>("/audit"), setAudits);
+      add(request<any[]>("/audit").then((items) => items.map(normalizeAudit)), setAudits);
     if (tab === "settings")
       add(request<Settings>("/settings"), setSettings);
     if (tab === "payslips")
