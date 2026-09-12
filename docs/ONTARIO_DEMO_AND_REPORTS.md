@@ -8,7 +8,7 @@ The schedule is Monday–Friday 08:00–17:00 with a 60-minute unpaid break, Sat
 
 1. Open `google-apps-script/Code.gs` in the Apps Script project attached to the supplied Google Sheet and replace its contents.
 2. Deploy a new Web app version (execute as the owner; access: anyone with the link) and copy its `/exec` URL.
-3. In Vercel set `GOOGLE_SCRIPT_URL` to that URL as a Secret and set `VITE_API_URL=/api` as Config. Redeploy.
+3. In Apps Script **Project settings → Script properties**, add `REPORTS_FOLDER_ID` with the ID of a dedicated Google Drive folder. In Vercel set `GOOGLE_SCRIPT_URL` to that URL as a Secret and set `VITE_API_URL=/api` as Config. Redeploy.
 4. Call `POST /api/admin/seed-demo` once. Repeating it is safe: existing demo identifiers are not duplicated.
 
 The Google Sheet is set to `America/Toronto` and contains an append-only `report_registry` tab. Its audit tab receives seed, write, delete/void and report-issued events.
@@ -17,4 +17,4 @@ The Google Sheet is set to `America/Toronto` and contains an append-only `report
 
 Reports are created per employee and per requested range. The Apps Script snapshot includes all overlapping pay periods. Reports produce one file at a time through `/api/reports/generate`; each binary's SHA-256 and the frozen source payload hash are recorded before download. Enter the report ID and SHA-256 in `/verify` to receive `Valid`, `Altered`, `Unknown`, or `Missing`.
 
-The PDF itself is not a certificate-backed digital signature. Its integrity guarantee is the registered SHA-256 snapshot trail. Cover sheets for source data only state that the export job did not create, change, estimate, backdate, or approve records. For demo rows the cover sheet instead explicitly disclaims IRCC use.
+When that folder property is set, every issued binary is stored there as a view-only Drive file and its URL is retained in `report_registry`. The PDF itself is not a certificate-backed digital signature. Its integrity guarantee is the registered SHA-256 snapshot trail. Cover sheets for source data only state that the export job did not create, change, estimate, backdate, or approve records. For demo rows the cover sheet instead explicitly disclaims IRCC use.
