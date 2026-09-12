@@ -413,11 +413,11 @@ const defaultEmployeeDuties = (employee: Employee & Record<string, unknown>, lan
   if (role.includes("manager")) return "برنامه‌ریزی عملیات، نظارت بر عملکرد تیم، مدیریت منابع و ارائه گزارش مدیریتی.";
   return `انجام وظایف محوله در واحد ${String(employee.department ?? "مربوطه")}، همکاری با تیم و ثبت گزارش کار.`;
 };
-const scheduleTitleFa = (name: unknown) => {
+const scheduleTitleFa = (name: unknown, language: Language = "fa") => {
   const value = String(name ?? "").trim();
-  if (value === "Color") return "شیفت عادی";
-  if (value.startsWith("Ontario demo standard")) return "شیفت استاندارد انتاریو";
-  return value || "شیفت بدون عنوان";
+  if (value === "Color") return language === "en" ? "Standard shift" : "شیفت عادی";
+  if (value.startsWith("Ontario demo standard")) return language === "en" ? "Ontario standard shift" : "شیفت استاندارد انتاریو";
+  return value || (language === "en" ? "Untitled shift" : "شیفت بدون عنوان");
 };
 const leaveTitleFa = (leave: { name?: unknown; isPaid?: boolean }) => {
   const value = String(leave.name ?? "").trim();
@@ -800,10 +800,10 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
           />
         )}
         {tab === "calendar" && (
-          <CalendarPage config={config} employees={employees} busy={busy} run={run} view="calendar" />
+          <CalendarPage config={config} employees={employees} busy={busy} run={run} view="calendar" language={language} />
         )}
         {tab === "rules" && (
-          <CalendarPage config={config} employees={employees} busy={busy} run={run} view="rules" />
+          <CalendarPage config={config} employees={employees} busy={busy} run={run} view="rules" language={language} />
         )}
         {tab === "payroll" && (
           <PayrollPage
@@ -1499,12 +1499,14 @@ function CalendarPage({
   busy,
   run,
   view,
+  language,
 }: {
   config: Config;
   employees: Employee[];
   busy: boolean;
   run: any;
   view: "calendar" | "rules";
+  language: Language;
 }) {
   const [show, setShow] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
@@ -1775,10 +1777,11 @@ function CalendarPage({
               <article key={s.id}>
                 <span className="schedule-icon">◷</span>
                 <div>
-                  <strong>{scheduleTitleFa(s.name)}</strong>
+                  <strong>{scheduleTitleFa(s.name, language)}</strong>
                   <p>
-                    {min(s.startMinute)} تا {min(s.endMinute)} •{" "}
-                    {s.breakMinutes} دقیقه استراحت
+                    {language === "en"
+                      ? `${min(s.startMinute)} to ${min(s.endMinute)} • ${s.breakMinutes} minutes break`
+                      : `${min(s.startMinute)} تا ${min(s.endMinute)} • ${s.breakMinutes} دقیقه استراحت`}
                   </p>
                 </div>
                 <div className="card-actions">
@@ -1899,7 +1902,7 @@ function CalendarPage({
                       <span
                         className="calendar-event work-event"
                         aria-label="روز کاری"
-                      >{item.override.scheduleName}</span>
+                      >{scheduleTitleFa(item.override.scheduleName, language)}</span>
                     ) : item.isWorkday ? (
                       <span
                         className="calendar-event work-event"
@@ -2018,7 +2021,7 @@ function CalendarPage({
                     >
                       {config.schedules.map((schedule) => (
                         <option key={schedule.id} value={schedule.id}>
-                          {scheduleTitleFa(schedule.name)}
+                          {scheduleTitleFa(schedule.name, language)}
                         </option>
                       ))}
                     </select>
