@@ -493,12 +493,12 @@ function Header({
         <p>
           {tab === "dashboard"
             ? "خلاصه وضعیت نیروی انسانی و پردازش حقوق"
-            : "اطلاعات این بخش در PostgreSQL ذخیره و حسابرسی می‌شود"}
+            : "اطلاعات این بخش در Google Sheets ذخیره می‌شود"}
         </p>
       </div>
       <div className="top-actions">
         <span className={`connection ${online ? "connected" : "disconnected"}`}>
-          {online ? "● PostgreSQL متصل" : "● PostgreSQL قطع"}
+          {online ? "● Google Sheets متصل" : "● Google Sheets قطع"}
         </span>
         {(tab === "dashboard" || tab === "attendance") && (
           <button className="primary-button" onClick={onPrimary}>
@@ -561,7 +561,7 @@ function Dashboard({
           <div className="panel-head">
             <div>
               <h2>آخرین وضعیت حضور</h2>
-              <p>داده زنده از PostgreSQL</p>
+              <p>داده زنده از Google Sheets</p>
             </div>
             <button className="link-button" onClick={() => go("attendance")}>
               مشاهده همه ←
@@ -1205,6 +1205,7 @@ function CalendarPage({
         request(editingSchedule ? `/schedules/${editingSchedule.id}` : "/schedules", {
           method: editingSchedule ? "PUT" : "POST",
           body: JSON.stringify({
+            ...(editingSchedule ? { id: editingSchedule.id } : {}),
             name: f.get("name"),
             startMinute: toMin(String(f.get("start"))),
             endMinute: toMin(String(f.get("end"))),
@@ -1238,6 +1239,7 @@ function CalendarPage({
         request(`/schedules/${defaultSchedule.id}`, {
           method: "PUT",
           body: JSON.stringify({
+            id: defaultSchedule.id,
             name: defaultSchedule.name,
             startMinute: defaultSchedule.startMinute,
             endMinute: defaultSchedule.endMinute,
