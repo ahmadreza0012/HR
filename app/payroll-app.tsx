@@ -260,6 +260,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
   });
   const [selectedDate, setSelectedDate] = useState(today);
   const [online, setOnline] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
   const notify = (text: string) => {
@@ -267,6 +268,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     setTimeout(() => setToast(""), 3200);
   };
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const [e, a, m, f, p, c, l, s, slips] = await Promise.all([
         request<Employee[]>("/employees"),
@@ -293,6 +295,8 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
       setOnline(true);
     } catch {
       setOnline(false);
+    } finally {
+      setLoading(false);
     }
   }, [selectedDate]);
   useEffect(() => {
@@ -335,7 +339,13 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
     if (window.location.pathname !== tabRoutes[nextTab]) window.history.pushState({}, "", tabRoutes[nextTab]);
   };
   return (
-    <main className="app-shell">
+    <main className="app-shell" aria-busy={loading || busy}>
+      {loading && (
+        <div className="api-loading" role="status" aria-live="polite">
+          <span className="api-spinner" aria-hidden="true" />
+          <span>در حال دریافت اطلاعات...</span>
+        </div>
+      )}
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">ک</span>

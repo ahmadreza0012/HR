@@ -1826,6 +1826,34 @@ td {
   box-shadow: 0 12px 30px #15263835;
   font-size: 11px;
 }
+
+.api-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgb(8 15 28 / 42%);
+  backdrop-filter: blur(2px);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.api-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgb(255 255 255 / 28%);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: api-spin .75s linear infinite;
+}
+
+@keyframes api-spin {
+  to { transform: rotate(360deg); }
+}
 .badge.holiday {
   background: #edf3ff;
   color: #2563eb;
