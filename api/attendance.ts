@@ -7,6 +7,8 @@ export default async function handler(req: any, res: any) {
   if (incoming.searchParams.has("date")) target.searchParams.set("date", incoming.searchParams.get("date")!);
   try {
     const upstream = await fetch(target, { redirect: "follow" });
-    res.status(upstream.status).setHeader("Content-Type", "application/json").end(await upstream.text());
+    res.status(upstream.status).setHeader("Content-Type", "application/json");
+    if (upstream.ok) res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+    res.end(await upstream.text());
   } catch (error) { res.status(502).json({ error: String(error) }); }
 }

@@ -32,6 +32,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const text = await upstream.text();
     res.status(upstream.status);
     res.setHeader("Content-Type", upstream.headers.get("content-type") ?? "application/json");
+    if (req.method === "GET" && upstream.ok) {
+      // Serve repeated Sheet reads from Vercel's edge cache; the browser gets
+      // stale data immediately while the CDN refreshes in the background.
+      res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+    }
     res.end(text);
   } catch (error) {
     res.status(502).json({ error: String(error) });
