@@ -2689,7 +2689,11 @@ function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: bo
           <span>XL</span>
           <h3>فایل کامل حقوق و دستمزد</h3>
           <p>تمام شیت‌ها راست‌چین و آماده مشاهده در Excel هستند.</p>
-          <a className="primary-button download" href={`${API}/export`}>
+          <a
+            className="primary-button download"
+            href="/Ontario_Payroll_Attendance_6_Employees_2026-09_PDF_DIRECT_LINKS.xlsx"
+            download="Ontario_Payroll_Attendance_6_Employees_2026-09_PDF_DIRECT_LINKS.xlsx"
+          >
             ⬇ دریافت فایل Excel
           </a>
         </div>

@@ -10,6 +10,12 @@
       "headers": [
         { "key": "Content-Disposition", "value": "attachment; filename=Kara_Payroll_Operational.xlsx" }
       ]
+    },
+    {
+      "source": "/Ontario_Payroll_Attendance_6_Employees_2026-09_PDF_DIRECT_LINKS.xlsx",
+      "headers": [
+        { "key": "Content-Disposition", "value": "attachment; filename=Ontario_Payroll_Attendance_6_Employees_2026-09_PDF_DIRECT_LINKS.xlsx" }
+      ]
     }
   ],
   "rewrites": [
