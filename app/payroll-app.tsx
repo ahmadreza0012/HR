@@ -343,22 +343,21 @@ const nthWeekday = (year: number, month: number, weekday: number, nth: number) =
   const first = new Date(year, month, 1);
   return new Date(year, month, 1 + ((weekday - first.getDay() + 7) % 7) + 7 * (nth - 1));
 };
-const canadaFederalHolidays = (year: number) => {
+const ontarioPublicHolidays = (year: number) => {
   const victoriaDay = new Date(year, 4, 24);
   while (victoriaDay.getDay() !== 1) victoriaDay.setDate(victoriaDay.getDate() - 1);
   const easter = easterSunday(year);
   return [
     { date: isoDate(new Date(year, 0, 1)), title: "New Year's Day" },
+    { date: isoDate(nthWeekday(year, 1, 1, 3)), title: "Family Day" },
     { date: isoDate(addDays(easter, -2)), title: "Good Friday" },
     { date: isoDate(victoriaDay), title: "Victoria Day" },
     { date: isoDate(new Date(year, 6, 1)), title: "Canada Day" },
     { date: isoDate(nthWeekday(year, 8, 1, 1)), title: "Labour Day" },
-    { date: isoDate(new Date(year, 8, 30)), title: "National Day for Truth and Reconciliation" },
     { date: isoDate(nthWeekday(year, 9, 1, 2)), title: "Thanksgiving Day" },
-    { date: isoDate(new Date(year, 10, 11)), title: "Remembrance Day" },
     { date: isoDate(new Date(year, 11, 25)), title: "Christmas Day" },
     { date: isoDate(new Date(year, 11, 26)), title: "Boxing Day" },
-  ].map((event) => ({ ...event, id: `canada-${event.date}` }));
+  ].map((event) => ({ ...event, id: `ontario-${event.date}` }));
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -1317,7 +1316,7 @@ function CalendarPage({
     // Canadian calendars start the week on Sunday.
     const firstWeekday = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
-    const statutoryHolidays = canadaFederalHolidays(year);
+    const statutoryHolidays = ontarioPublicHolidays(year);
     return [
       ...Array.from({ length: firstWeekday }, () => null),
       ...Array.from({ length: totalDays }, (_, index) => {
