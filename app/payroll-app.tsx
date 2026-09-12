@@ -574,6 +574,7 @@ export function PayrollApp({ initialTab = "dashboard" }: { initialTab?: TabKey }
         {tab === "dashboard" && (
           <Dashboard
             active={active}
+            employees={employees}
             attendance={attendance}
             monthly={monthly}
             overtime={sums.o}
@@ -700,6 +701,7 @@ function Header({
 
 function Dashboard({
   active,
+  employees,
   attendance,
   monthly,
   overtime,
@@ -707,6 +709,7 @@ function Dashboard({
   go,
 }: {
   active: number;
+  employees: Employee[];
   attendance: Attendance[];
   monthly: Monthly[];
   overtime: number;
@@ -755,7 +758,7 @@ function Dashboard({
               مشاهده همه ←
             </button>
           </div>
-          <AttendanceTable rows={attendance.slice(0, 5)} />
+          <AttendanceTable rows={attendance.slice(0, 5)} employees={employees} />
         </article>
         <aside className="panel payroll-card">
           <div className="panel-head">
