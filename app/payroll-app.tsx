@@ -291,6 +291,31 @@ const defaultEmployeeDuties = (employee: Employee & Record<string, unknown>) => 
   if (role.includes("manager")) return "برنامه‌ریزی عملیات، نظارت بر عملکرد تیم، مدیریت منابع و ارائه گزارش مدیریتی.";
   return `انجام وظایف محوله در واحد ${String(employee.department ?? "مربوطه")}، همکاری با تیم و ثبت گزارش کار.`;
 };
+const scheduleTitleFa = (name: unknown) => {
+  const value = String(name ?? "").trim();
+  if (value === "Color") return "شیفت عادی";
+  if (value.startsWith("Ontario demo standard")) return "شیفت استاندارد انتاریو";
+  return value || "شیفت بدون عنوان";
+};
+const leaveTitleFa = (leave: { name?: unknown; isPaid?: boolean }) => {
+  const value = String(leave.name ?? "").trim();
+  if (!value || /^\d+$/.test(value)) return leave.isPaid ? "مرخصی استحقاقی" : "مرخصی بدون حقوق";
+  if (value.toLowerCase() === "annual leave") return "مرخصی استحقاقی";
+  if (value.toLowerCase() === "sick leave") return "مرخصی استعلاجی";
+  if (value.toLowerCase() === "unpaid leave") return "مرخصی بدون حقوق";
+  return value;
+};
+const holidayTitleFa = (title: unknown) => ({
+  "Good Friday": "جمعه نیک",
+  "Victoria Day": "روز ویکتوریا",
+  "Canada Day": "روز کانادا",
+  "Labour Day": "روز کارگر",
+  "Family Day": "روز خانواده",
+  "Thanksgiving Day": "روز شکرگزاری",
+  "New Year's Day": "روز سال نو",
+  "Christmas Day": "روز کریسمس",
+  "Boxing Day": "روز باکسینگ",
+}[String(title ?? "").trim()] ?? String(title ?? "تعطیلی"));
 const tabForPath = (path: string): TabKey =>
   ((Object.entries(tabRoutes) as [TabKey, string][]).find(([, route]) => route === path)?.[0] ?? "dashboard");
 const statusFa: Record<string, string> = {
@@ -1537,7 +1562,7 @@ function CalendarPage({
   return (
     <div className={`split-pages${view === "calendar" ? " calendar-page-layout" : ""}`}>
       <PagePanel
-        title={view === "calendar" ? "تقویم کاری" : "برنامه‌های کاری"}
+        title={view === "calendar" ? "تقویم کاری" : "شیفت و مرخصی"}
         subtitle={
           view === "calendar"
             ? "انتخاب روز برای تعیین تعطیلی یا شیفت کاری"
@@ -1745,7 +1770,7 @@ function CalendarPage({
                       <span
                         className="calendar-event holiday-event"
                         aria-label="تعطیل"
-                      >{item.holiday?.title ?? "Holiday"}</span>
+                      >{holidayTitleFa(item.holiday?.title ?? "تعطیلی")}</span>
                     ) : item.override?.scheduleName ? (
                       <span
                         className="calendar-event work-event"
@@ -1869,7 +1894,7 @@ function CalendarPage({
                     >
                       {config.schedules.map((schedule) => (
                         <option key={schedule.id} value={schedule.id}>
-                          {schedule.name}
+                          {scheduleTitleFa(schedule.name)}
                         </option>
                       ))}
                     </select>
@@ -1939,7 +1964,7 @@ function CalendarPage({
                 <article key={x.id}>
                   <span className="schedule-icon leave-icon">◫</span>
                   <div>
-                    <strong>{x.name}</strong>
+                    <strong>{leaveTitleFa(x)}</strong>
                     <p>
                       {x.unit === "hourly" ? "ساعتی" : "روزانه"} •{" "}
                       {x.isPaid ? "با حقوق" : "بدون حقوق"}
@@ -1982,7 +2007,7 @@ function CalendarPage({
                   <article key={x.id}>
                     <span className="schedule-icon holiday-icon">▦</span>
                     <div>
-                      <strong>{x.title}</strong>
+                      <strong>{holidayTitleFa(x.title)}</strong>
                       <p>{String(x.date).slice(0, 10)}</p>
                     </div>
                   </article>
