@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
   if (!scriptUrl) return res.status(500).json({ error: "GOOGLE_SCRIPT_URL is not configured" });
   const incoming = new URL(req.url ?? "/api", "http://vercel.internal");
-  const path = incoming.pathname.replace(/^\/api\/?/, "");
+  const path = incoming.searchParams.get("path") || incoming.pathname.replace(/^\/api\/?/, "");
   const target = new URL(scriptUrl);
   target.searchParams.set("path", path);
   for (const [key, value] of incoming.searchParams) {
