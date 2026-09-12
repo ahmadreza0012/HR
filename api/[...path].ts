@@ -76,6 +76,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Keep custom binary/report endpoints within this one deployed Function.
   // Every other endpoint is a transparent proxy to Apps Script.
+  if (path === "export" || path === "export.xlsx") {
+    res.status(302);
+    res.setHeader("Location", "/Kara_Payroll_Operational.xlsx");
+    return res.end();
+  }
   if (path === "reports/generate") return generateReport(req, res, scriptUrl);
   if (path === "monthly") {
     try {
