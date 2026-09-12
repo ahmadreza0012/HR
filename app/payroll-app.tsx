@@ -2491,7 +2491,7 @@ function ReportsPage({ employees, busy, run }: { employees: Employee[]; busy: bo
           <span>XL</span>
           <h3>فایل کامل حقوق و دستمزد</h3>
           <p>تمام شیت‌ها راست‌چین و آماده مشاهده در Excel هستند.</p>
-          <a className="primary-button download" href={`${API}/export.xlsx`}>
+          <a className="primary-button download" href={`${API}/export`}>
             ⬇ دریافت فایل Excel
           </a>
         </div>
