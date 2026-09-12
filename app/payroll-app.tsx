@@ -221,15 +221,23 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const sheetsUrl = sheetsRequest && method !== "POST"
     ? `${apiUrl(path)}&method=${encodeURIComponent(method)}`
     : apiUrl(path);
-  const res = await fetch(sheetsUrl, {
-    ...options,
-    method: sheetsRequest ? "POST" : options?.method,
-    headers: {
-      ...(sheetsRequest ? { "Content-Type": "text/plain;charset=utf-8" } : { "Content-Type": "application/json", "x-session-id": "kara-local" }),
-      ...(options?.headers ?? {}),
-    },
-    body: sheetsRequest && typeof options?.body === "string" ? options.body : options?.body,
-  });
+  const timeout = new AbortController();
+  const timer = window.setTimeout(() => timeout.abort(), 15000);
+  let res: Response;
+  try {
+    res = await fetch(sheetsUrl, {
+      ...options,
+      method: sheetsRequest ? "POST" : options?.method,
+      signal: timeout.signal,
+      headers: {
+        ...(sheetsRequest ? { "Content-Type": "text/plain;charset=utf-8" } : { "Content-Type": "application/json", "x-session-id": "kara-local" }),
+        ...(options?.headers ?? {}),
+      },
+      body: sheetsRequest && typeof options?.body === "string" ? options.body : options?.body,
+    });
+  } finally {
+    window.clearTimeout(timer);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? "ارتباط با سرور ناموفق بود");
