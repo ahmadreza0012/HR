@@ -1140,7 +1140,9 @@ function CalendarPage({
           ? date.getDay() !== 5
           : configuredDays.includes(date.getDay());
         const isWorkday =
-          !selectedWeeklyOffDays.includes(date.getDay()) && scheduleWorkday;
+          weeklyOffDays !== null
+            ? !selectedWeeklyOffDays.includes(date.getDay())
+            : !selectedWeeklyOffDays.includes(date.getDay()) && scheduleWorkday;
         return { date, value, holiday, override, isWorkday };
       }),
     ];
@@ -1150,6 +1152,7 @@ function CalendarPage({
     config.overrides,
     defaultSchedule,
     selectedWeeklyOffDays,
+    weeklyOffDays,
   ]);
   const monthLabel = new Intl.DateTimeFormat("fa-IR", {
     year: "numeric",
@@ -1411,7 +1414,9 @@ function CalendarPage({
                   ? jsDay !== 5
                   : configuredDays.includes(jsDay);
                 const isWorkday =
-                  !selectedWeeklyOffDays.includes(jsDay) && scheduleWorkday;
+                  weeklyOffDays !== null
+                    ? !selectedWeeklyOffDays.includes(jsDay)
+                    : !selectedWeeklyOffDays.includes(jsDay) && scheduleWorkday;
                 return (
                   <span className={isWorkday ? "workday" : "weekend"} key={day}>
                     <strong>{day}</strong>
