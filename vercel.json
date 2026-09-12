@@ -4,6 +4,14 @@
   "outputDirectory": "dist/client",
   "framework": null,
   "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/Kara_Payroll_Operational.xlsx",
+      "headers": [
+        { "key": "Content-Disposition", "value": "attachment; filename=Kara_Payroll_Operational.xlsx" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/favicon.ico", "destination": "/favicon.svg" },
     {
